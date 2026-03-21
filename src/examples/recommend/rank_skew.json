@@ -1,0 +1,97 @@
+{
+  "duration_s": 945.2,
+  "system_samples": 472,
+  "cpu_avg_percent": 68.3,
+  "cpu_peak_percent": 95.0,
+  "ram_avg_gb": 42.1,
+  "ram_peak_gb": 48.5,
+  "ram_total_gb": 128.0,
+  "gpu_available": true,
+  "gpu_count": 4,
+  "gpu_util_avg_percent": 72.5,
+  "gpu_util_peak_percent": 98.0,
+  "gpu_mem_avg_gb": 15.8,
+  "gpu_mem_peak_gb": 18.2,
+  "gpu_temp_avg_c": 65.0,
+  "gpu_temp_peak_c": 78.0,
+  "gpu_power_avg_w": 245.0,
+  "gpu_power_peak_w": 310.0,
+  "step_time": {
+    "training_steps": 3000,
+    "latest_step_observed": 2999,
+    "ranks_seen": 4,
+    "max_steps_analyzed_per_rank": 50000,
+    "worst_rank": 2,
+    "median_rank": 1,
+    "worst_vs_median_pct": 32.5,
+    "worst_avg_step_ms": 485.2,
+    "median_avg_step_ms": 366.2,
+    "dominant_text": "median rank is dominated by backward; worst rank is dominated by forward",
+    "median_split_ms": {
+      "dataloader": 18.5,
+      "forward": 125.3,
+      "backward": 188.7,
+      "optimizer": 33.7
+    },
+    "median_split_pct": {
+      "dataloader": 5.1,
+      "forward": 34.2,
+      "backward": 51.5,
+      "optimizer": 9.2
+    },
+    "worst_split_ms": {
+      "dataloader": 22.1,
+      "forward": 215.8,
+      "backward": 198.4,
+      "optimizer": 48.9
+    },
+    "worst_split_pct": {
+      "dataloader": 4.6,
+      "forward": 44.5,
+      "backward": 40.9,
+      "optimizer": 10.1
+    },
+    "per_rank": {
+      "0": {
+        "steps_analyzed": 3000,
+        "avg_dataloader_ms": 17.2,
+        "avg_forward_ms": 128.5,
+        "avg_backward_ms": 185.3,
+        "avg_optimizer_ms": 32.1,
+        "avg_step_cpu_ms": 345.9,
+        "avg_gpu_compute_ms": 345.9,
+        "avg_total_step_ms": 363.1
+      },
+      "1": {
+        "steps_analyzed": 3000,
+        "avg_dataloader_ms": 18.5,
+        "avg_forward_ms": 125.3,
+        "avg_backward_ms": 188.7,
+        "avg_optimizer_ms": 33.7,
+        "avg_step_cpu_ms": 347.7,
+        "avg_gpu_compute_ms": 347.7,
+        "avg_total_step_ms": 366.2
+      },
+      "2": {
+        "steps_analyzed": 3000,
+        "avg_dataloader_ms": 22.1,
+        "avg_forward_ms": 215.8,
+        "avg_backward_ms": 198.4,
+        "avg_optimizer_ms": 48.9,
+        "avg_step_cpu_ms": 463.1,
+        "avg_gpu_compute_ms": 463.1,
+        "avg_total_step_ms": 485.2
+      },
+      "3": {
+        "steps_analyzed": 3000,
+        "avg_dataloader_ms": 19.8,
+        "avg_forward_ms": 130.1,
+        "avg_backward_ms": 190.2,
+        "avg_optimizer_ms": 34.5,
+        "avg_step_cpu_ms": 354.8,
+        "avg_gpu_compute_ms": 354.8,
+        "avg_total_step_ms": 374.6
+      }
+    }
+  }
+}

@@ -532,6 +532,15 @@ def build_parser():
     )
     inspect_parser.add_argument("file", help="Path to a .msgpack file")
 
+    recommend_parser = sub.add_parser(
+        "recommend",
+        help="Analyze a completed run and suggest optimizations",
+    )
+    recommend_parser.add_argument(
+        "path",
+        help="Path to a summary_card.json file or a session directory",
+    )
+
     return parser
 
 
@@ -547,6 +556,10 @@ def main():
         run_with_tracing(args, profile="deep")
     elif args.command == "inspect":
         run_inspect(args)
+    elif args.command == "recommend":
+        from traceml.optimizer.recommend import run_recommend
+
+        run_recommend(args.path)
     else:
         parser.print_help()
 

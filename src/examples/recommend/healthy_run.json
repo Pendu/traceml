@@ -1,0 +1,57 @@
+{
+  "duration_s": 1200.5,
+  "system_samples": 600,
+  "cpu_avg_percent": 28.5,
+  "cpu_peak_percent": 55.0,
+  "ram_avg_gb": 16.2,
+  "ram_peak_gb": 18.1,
+  "ram_total_gb": 64.0,
+  "gpu_available": true,
+  "gpu_count": 1,
+  "gpu_util_avg_percent": 92.5,
+  "gpu_util_peak_percent": 99.0,
+  "gpu_mem_avg_gb": 20.1,
+  "gpu_mem_peak_gb": 21.5,
+  "gpu_temp_avg_c": 68.0,
+  "gpu_temp_peak_c": 75.0,
+  "gpu_power_avg_w": 275.0,
+  "gpu_power_peak_w": 320.0,
+  "step_time": {
+    "training_steps": 10000,
+    "latest_step_observed": 9999,
+    "ranks_seen": 1,
+    "max_steps_analyzed_per_rank": 50000,
+    "worst_rank": 0,
+    "median_rank": 0,
+    "worst_vs_median_pct": null,
+    "worst_avg_step_ms": 120.1,
+    "median_avg_step_ms": 120.1,
+    "dominant_text": "backward is the largest part of step time",
+    "median_split_ms": {
+      "dataloader": 5.2,
+      "forward": 42.3,
+      "backward": 58.1,
+      "optimizer": 14.5
+    },
+    "median_split_pct": {
+      "dataloader": 4.3,
+      "forward": 35.2,
+      "backward": 48.4,
+      "optimizer": 12.1
+    },
+    "worst_split_ms": null,
+    "worst_split_pct": null,
+    "per_rank": {
+      "0": {
+        "steps_analyzed": 10000,
+        "avg_dataloader_ms": 5.2,
+        "avg_forward_ms": 42.3,
+        "avg_backward_ms": 58.1,
+        "avg_optimizer_ms": 14.5,
+        "avg_step_cpu_ms": 114.9,
+        "avg_gpu_compute_ms": 114.9,
+        "avg_total_step_ms": 120.1
+      }
+    }
+  }
+}
