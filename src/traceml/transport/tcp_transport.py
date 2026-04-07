@@ -1,6 +1,7 @@
 import queue
 import socket
 import struct
+import sys
 import threading
 from dataclasses import dataclass
 from typing import Dict, Iterator, Optional
@@ -8,6 +9,10 @@ from typing import Dict, Iterator, Optional
 import msgspec
 
 from traceml.loggers.error_log import get_error_logger
+
+WIRE_VERSION: int = 1
+SUPPORTED_VERSIONS: frozenset[int] = frozenset({1})
+HEADER_SIZE: int = 5  # 1 byte version + 4 bytes length
 
 
 @dataclass(frozen=True)
@@ -89,24 +94,34 @@ class TCPServer:
         self,
         buffer: bytearray,
         expected: Optional[int],
-    ) -> tuple[list[bytes], bytearray, Optional[int]]:
-        frames: list[bytes] = []
+        version: Optional[int] = None,
+    ) -> tuple[
+        list[tuple[int, bytes]], bytearray, Optional[int]
+    ]:
+        frames: list[tuple[int, bytes]] = []
         offset = 0
         buf_len = len(buffer)
 
         while True:
             if expected is None:
-                if buf_len - offset < 4:
+                if buf_len - offset < HEADER_SIZE:
                     break
-                expected = struct.unpack("!I", buffer[offset : offset + 4])[0]
-                offset += 4
+                version = buffer[offset]
+                expected = struct.unpack(
+                    "!I",
+                    buffer[offset + 1 : offset + HEADER_SIZE],
+                )[0]
+                offset += HEADER_SIZE
 
             if buf_len - offset < expected:
                 break
 
-            frames.append(buffer[offset : offset + expected])
+            frames.append(
+                (version, buffer[offset : offset + expected])
+            )
             offset += expected
             expected = None
+            version = None
 
         if offset > 0:
             del buffer[:offset]
@@ -130,8 +145,18 @@ class TCPServer:
                     break  # socket error
 
                 buffer.extend(data)
-                frames, buffer, expected = self._drain_frames(buffer, expected)
-                for payload in frames:
+                frames, buffer, expected = (
+                    self._drain_frames(buffer, expected)
+                )
+                for version, payload in frames:
+                    if version not in SUPPORTED_VERSIONS:
+                        print(
+                            f"[TraceML] Unknown wire version"
+                            f" {version}, dropping"
+                            f" message",
+                            file=sys.stderr,
+                        )
+                        continue
                     try:
                         msg = decoder.decode(payload)
                         self._queue.put_nowait(msg)
@@ -172,7 +197,9 @@ class TCPClient:
             self._ensure_connected()
             # Encode dict to binary MessagePack
             data = msgspec.msgpack.encode(payload)
-            header = struct.pack("!I", len(data))
+            header = struct.pack(
+                "!BI", WIRE_VERSION, len(data)
+            )
             with self._lock:
                 self._sock.sendall(header + data)
         except Exception:
@@ -201,7 +228,9 @@ class TCPClient:
             self._ensure_connected()
             # Encode the whole list as one msgpack frame
             data = msgspec.msgpack.encode(payloads)
-            header = struct.pack("!I", len(data))
+            header = struct.pack(
+                "!BI", WIRE_VERSION, len(data)
+            )
             with self._lock:
                 self._sock.sendall(header + data)
         except Exception:

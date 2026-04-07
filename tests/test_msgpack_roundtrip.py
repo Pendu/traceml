@@ -20,25 +20,28 @@ import pytest
 
 def write_framed_records(path: Path, records: list[dict]) -> None:
     """Write records in the same format as DatabaseWriter.flush()."""
+    from traceml.transport.tcp_transport import WIRE_VERSION
+
     encoder = msgspec.msgpack.Encoder()
     with open(path, "ab") as f:
         for r in records:
             payload = encoder.encode(r)
-            f.write(struct.pack("!I", len(payload)))
+            f.write(struct.pack("!BI", WIRE_VERSION, len(payload)))
             f.write(payload)
 
 
 def read_framed_records(path: Path) -> list[dict]:
-    """Read records using the same protocol as cli.run_inspect()."""
+    """Read versioned records (1 byte version + 4 bytes length)."""
     decoder = msgspec.msgpack.Decoder()
     records = []
     with open(path, "rb") as f:
         while True:
-            header = f.read(4)
+            header = f.read(5)
             if not header:
                 break
-            assert len(header) == 4, "Truncated header"
-            length = struct.unpack("!I", header)[0]
+            assert len(header) == 5, "Truncated header"
+            _version = header[0]
+            length = struct.unpack("!I", header[1:5])[0]
             payload = f.read(length)
             assert len(payload) == length, "Truncated payload"
             records.append(decoder.decode(payload))
@@ -122,8 +125,10 @@ class TestMsgpackRoundtrip:
     def test_truncated_payload_is_detected(self, tmp_path):
         """Header claims 100 bytes but only 5 are available."""
         path = tmp_path / "test.msgpack"
-        # Write a header that says 100 bytes, plus only 5 bytes of data
-        path.write_bytes(struct.pack("!I", 100) + b"\x00" * 5)
+        # Version byte + header claiming 100 bytes, plus only 5
+        path.write_bytes(
+            bytes([1]) + struct.pack("!I", 100) + b"\x00" * 5
+        )
 
         with pytest.raises(AssertionError, match="Truncated payload"):
             read_framed_records(path)

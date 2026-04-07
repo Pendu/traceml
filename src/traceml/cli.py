@@ -602,16 +602,17 @@ def run_inspect(args: argparse.Namespace) -> None:
     with open(path, "rb") as f:
         try:
             while True:
-                header = f.read(4)
+                header = f.read(5)  # 1 version + 4 length
                 if not header:
                     break
-                if len(header) < 4:
+                if len(header) < 5:
                     print(
                         "[TraceML] WARNING: truncated frame header",
                         file=sys.stderr,
                     )
                     break
-                length = struct.unpack("!I", header)[0]
+                _version = header[0]
+                length = struct.unpack("!I", header[1:5])[0]
                 payload = f.read(length)
                 if len(payload) < length:
                     print(

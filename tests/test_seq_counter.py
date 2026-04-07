@@ -183,15 +183,16 @@ class TestDBIncrementalSender:
 
 
 def _read_framed_records(path: Path) -> list:
-    """Read length-prefixed msgpack records (same as test_msgpack_roundtrip)."""
+    """Read versioned length-prefixed msgpack records."""
     decoder = msgspec.msgpack.Decoder()
     records = []
     with open(path, "rb") as f:
         while True:
-            header = f.read(4)
+            header = f.read(5)  # 1 byte version + 4 bytes length
             if not header:
                 break
-            length = struct.unpack("!I", header)[0]
+            _version = header[0]
+            length = struct.unpack("!I", header[1:5])[0]
             payload = f.read(length)
             records.append(decoder.decode(payload))
     return records

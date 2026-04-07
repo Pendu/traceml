@@ -7,6 +7,7 @@ import msgspec
 from traceml.runtime.config import config
 from traceml.runtime.session import get_session_id
 from traceml.transport.distributed import get_ddp_info
+from traceml.transport.tcp_transport import WIRE_VERSION
 
 
 def _rank_suffix() -> str:
@@ -121,7 +122,11 @@ class DatabaseWriter:
             with open(path, "ab") as f:
                 for r in new_rows:
                     payload = self.encoder.encode(r)
-                    f.write(struct.pack("!I", len(payload)))
+                    f.write(
+                        struct.pack(
+                            "!BI", WIRE_VERSION, len(payload)
+                        )
+                    )
                     f.write(payload)
 
             self._last_written_seq[table_name] = total
