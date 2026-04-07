@@ -17,13 +17,13 @@ Key invariants
 - The aggregator MUST NOT know about UI sections, layouts, or renderer methods.
 """
 
+import importlib
 import threading
 import time
 from typing import Any, Callable, Dict, Type
 
 from traceml.aggregator.display_drivers.base import BaseDisplayDriver
 from traceml.aggregator.display_drivers.cli import CLIDisplayDriver
-from traceml.aggregator.display_drivers.nicegui import NiceGUIDisplayDriver
 from traceml.aggregator.sqlite_writer import (
     SQLiteWriterConfig,
     SQLiteWriterSimple,
@@ -50,10 +50,21 @@ def _safe(logger: Any, label: str, fn: Callable[[], Any]) -> Any:
         return None
 
 
-_DISPLAY_DRIVERS: Dict[str, Type[BaseDisplayDriver]] = {
-    "cli": CLIDisplayDriver,
-    "dashboard": NiceGUIDisplayDriver,
+_DISPLAY_DRIVERS: Dict[str, str] = {
+    "cli": "traceml.aggregator.display_drivers.cli.CLIDisplayDriver",
+    "dashboard": (
+        "traceml.aggregator.display_drivers"
+        ".nicegui.NiceGUIDisplayDriver"
+    ),
 }
+
+
+def _get_driver_class(name: str) -> Type[BaseDisplayDriver]:
+    """Lazily import and return a display driver class."""
+    dotted = _DISPLAY_DRIVERS[name]
+    module_path, class_name = dotted.rsplit(".", 1)
+    mod = importlib.import_module(module_path)
+    return getattr(mod, class_name)
 
 
 class TraceMLAggregator:
@@ -105,12 +116,13 @@ class TraceMLAggregator:
         )
 
         # Display driver owns renderer selection and layout mapping.
-        driver_cls = _DISPLAY_DRIVERS.get(settings.mode)
-        if driver_cls is None:
+        if settings.mode not in _DISPLAY_DRIVERS:
             raise ValueError(
-                f"[TraceML] Unknown display mode: {settings.mode!r}. "
-                f"Supported: {sorted(_DISPLAY_DRIVERS.keys())}"
+                f"[TraceML] Unknown display mode: "
+                f"{settings.mode!r}. "
+                f"Supported: {sorted(_DISPLAY_DRIVERS)}"
             )
+        driver_cls = _get_driver_class(settings.mode)
 
         self._display_driver = driver_cls(
             logger=self._logger,

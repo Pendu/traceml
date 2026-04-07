@@ -3,7 +3,11 @@ from __future__ import annotations
 from itertools import islice
 from typing import Any, Dict, List
 
-from IPython.display import HTML
+try:
+    from IPython.display import HTML
+except ImportError:
+    HTML = None
+
 from rich.panel import Panel
 from rich.text import Text
 
@@ -81,7 +85,12 @@ class StdoutStderrRenderer(BaseRenderer):
             border_style="cyan",
         )
 
-    def get_notebook_renderable(self) -> HTML:
+    def get_notebook_renderable(self):
+        if HTML is None:
+            raise ImportError(
+                "IPython is required for notebook rendering. "
+                "Install with: pip install traceml-ai[notebook]"
+            )
         return HTML(
             "<pre>Stdout/Stderr renderer disabled in notebook mode.</pre>"
         )

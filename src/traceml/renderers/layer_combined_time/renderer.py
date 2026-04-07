@@ -1,7 +1,11 @@
 import shutil
 from typing import Optional
 
-from IPython.display import HTML
+try:
+    from IPython.display import HTML
+except ImportError:
+    HTML = None
+
 from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
@@ -105,8 +109,13 @@ class LayerCombinedTimeRenderer(BaseRenderer):
         """
         return self._service.compute_display_data()
 
-    def get_notebook_renderable(self) -> HTML:
-        pass
+    def get_notebook_renderable(self):
+        if HTML is None:
+            raise ImportError(
+                "IPython is required for notebook rendering. "
+                "Install with: pip install traceml-ai[notebook]"
+            )
+        return None
 
     def log_summary(self, path) -> None:
         pass

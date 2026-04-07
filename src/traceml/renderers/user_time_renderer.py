@@ -3,7 +3,11 @@ from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
-from IPython.display import HTML
+try:
+    from IPython.display import HTML
+except ImportError:
+    HTML = None
+
 from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
@@ -466,7 +470,12 @@ class UserTimeRenderer(BaseRenderer):
             width=width,
         )
 
-    def get_notebook_renderable(self) -> HTML:
+    def get_notebook_renderable(self):
+        if HTML is None:
+            raise ImportError(
+                "IPython is required for notebook rendering. "
+                "Install with: pip install traceml-ai[notebook]"
+            )
         rows = self._build_rows()
 
         if not rows:
