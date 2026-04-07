@@ -23,9 +23,9 @@ from traceml.utils.hooks.layer_forward_time_hooks import (
 from traceml.utils.hooks.optimizer_hook import (
     ensure_optimizer_timing_installed,
 )
+from traceml.session_registry import get_session
 from traceml.utils.layer_parameter_memory import (
     collect_layer_parameter_memory,
-    model_queue,
 )
 from traceml.utils.patches.backward_auto_timer_patch import (
     backward_auto_timer,
@@ -60,10 +60,6 @@ if not _traceml_disabled():
     patch_backward()
 
 
-class TraceState:
-    step = 0
-
-
 @contextmanager
 def trace_step(model: nn.Module):
     """
@@ -89,6 +85,7 @@ def trace_step(model: nn.Module):
         yield
         return
 
+    session = get_session(id(model))
     mem_tracker = StepMemoryTracker(model)
     step_completed = False
 
@@ -100,7 +97,9 @@ def trace_step(model: nn.Module):
 
     try:
         with timed_region(
-            "_traceml_internal:step_time", scope="step", use_gpu=False
+            "_traceml_internal:step_time",
+            scope="step",
+            use_gpu=False,
         ):
             with forward_auto_timer(), backward_auto_timer():
                 ensure_optimizer_timing_installed()
@@ -109,18 +108,24 @@ def trace_step(model: nn.Module):
     finally:
         # Step end
         if step_completed:
-            TraceState.step += 1
+            session.step += 1
 
         # Memory sampling is step-end scoped
         try:
             mem_tracker.record()
         except Exception as e:
-            print(f"[TraceML] record failed: {e}", file=sys.stderr)
+            print(
+                f"[TraceML] record failed: {e}",
+                file=sys.stderr,
+            )
 
         try:
-            flush_step_events(model, TraceState.step)
+            flush_step_events(model, session.step)
         except Exception as e:
-            print(f"[TraceML] flush failed: {e}", file=sys.stderr)
+            print(
+                f"[TraceML] flush failed: {e}",
+                file=sys.stderr,
+            )
 
 
 def trace_model_instance(
@@ -157,8 +162,11 @@ def trace_model_instance(
             model._traceml_include_names = include_names
             model._traceml_exclude_names = exclude_names
             model._traceml_leaf_only = leaf_only
-            layer_memory = collect_layer_parameter_memory(model)
-            model_queue.put(layer_memory)
+            layer_memory = collect_layer_parameter_memory(
+                model
+            )
+            session = get_session(id(model))
+            session.model_queue.put(layer_memory)
 
         if trace_layer_forward_memory:
             attach_layer_forward_memory_hooks(

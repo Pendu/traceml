@@ -1,15 +1,30 @@
 from queue import Queue
-from typing import Dict
+from typing import Dict, Optional
 
 import torch.nn as nn
 
-# Shared queues for parameter-memory and activation events
-model_queue: Queue = Queue()
 
+def get_model_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return the model queue for parameter-memory sampling.
 
-def get_model_queue() -> Queue:
-    """Return the shared queue of models for parameter-memory sampling."""
-    return model_queue
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
+    """
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
+
+    if model_id is not None:
+        return get_session(model_id).model_queue
+    for sess in _registry.values():
+        return sess.model_queue
+    return Queue()
 
 
 def collect_layer_parameter_memory(model: nn.Module) -> Dict[str, float]:

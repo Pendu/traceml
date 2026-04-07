@@ -2,12 +2,10 @@ import os
 import sys
 from dataclasses import dataclass
 from queue import Full, Queue
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
-
-step_memory_queue: Queue = Queue(maxsize=2048)
 
 _temp_step_memory_buffer: Dict = {}
 
@@ -85,7 +83,32 @@ class StepMemoryTracker:
         _temp_step_memory_buffer[self.model_id] = evt
 
 
-def flush_step_memory_buffer(model: nn.Module, step: int) -> None:
+def get_step_memory_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return the step memory queue for a model session.
+
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
+    """
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
+
+    if model_id is not None:
+        return get_session(model_id).step_memory_queue
+    for sess in _registry.values():
+        return sess.step_memory_queue
+    return Queue(maxsize=2048)
+
+
+def flush_step_memory_buffer(
+    model: nn.Module, step: int
+) -> None:
     if TRACEML_DISABLED:
         return
 
@@ -96,10 +119,12 @@ def flush_step_memory_buffer(model: nn.Module, step: int) -> None:
         return
 
     evt.step = step
+    queue = get_step_memory_queue(model_id)
     try:
-        step_memory_queue.put_nowait(evt)
+        queue.put_nowait(evt)
     except Full:
         print(
-            f"[TraceML:StepMemory] Queue full, dropping event for model {evt.model_id}",
+            "[TraceML:StepMemory] Queue full, "
+            f"dropping event for model {evt.model_id}",
             file=sys.stderr,
         )

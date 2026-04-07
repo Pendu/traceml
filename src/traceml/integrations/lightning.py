@@ -3,7 +3,7 @@ import sys
 
 from lightning.pytorch.callbacks import Callback
 
-from traceml.decorators import TraceState
+from traceml.session_registry import get_session
 from traceml.utils.flush_buffers import flush_step_events
 from traceml.utils.step_memory import StepMemoryTracker
 from traceml.utils.timing import (
@@ -160,10 +160,12 @@ class TraceMLCallback(Callback):
             except Exception as e:
                 print(f"[TraceML] record failed: {e}", file=sys.stderr)
 
-        # Advance step counter and flush (treating every micro-batch as a step
-        # to preserve fine-grained forward/backward times)
-        TraceState.step += 1
+        # Advance step counter and flush (treating every
+        # micro-batch as a step to preserve fine-grained
+        # forward/backward times)
+        session = get_session(id(pl_module))
+        session.step += 1
         try:
-            flush_step_events(pl_module, TraceState.step)
+            flush_step_events(pl_module, session.step)
         except Exception as e:
             print(f"[TraceML] flush failed: {e}", file=sys.stderr)

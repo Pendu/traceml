@@ -32,12 +32,29 @@ import torch.nn as nn
 from traceml.utils.cuda_event_pool import get_cuda_event, return_cuda_event
 from traceml.utils.shared_utils import get_hookable_modules, model_is_on_cuda
 
-# Shared queue for backward timing events
-layer_backward_time_queue: Queue = Queue(maxsize=2048)
+def get_layer_backward_time_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return the layer backward time queue.
 
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
+    """
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
 
-def get_layer_backward_time_queue() -> Queue:
-    return layer_backward_time_queue
+    if model_id is not None:
+        return get_session(
+            model_id
+        ).layer_backward_time_queue
+    for sess in _registry.values():
+        return sess.layer_backward_time_queue
+    return Queue(maxsize=2048)
 
 
 # Prevent double hook attachment
@@ -233,7 +250,8 @@ def flush_layer_backward_time_buffers(model: nn.Module, step: int) -> None:
     )
 
     try:
-        layer_backward_time_queue.put_nowait(event)
+        queue = get_layer_backward_time_queue(model_id)
+        queue.put_nowait(event)
     except Full:
         pass
 

@@ -106,8 +106,10 @@ class StepTimeBatch:
 
 
 _GLOBAL_TIME_QUEUE: Queue = Queue(maxsize=2048)
-_STEP_TIME_QUEUE: Queue = Queue(maxsize=2048)
 
+# Module-level step buffer: written by record_event (no
+# model context), drained by flush_step_time_buffer (has
+# model context).
 _STEP_BUFFER: Deque[TimeEvent] = deque()
 
 
@@ -116,9 +118,25 @@ def get_global_time_queue() -> Queue:
     return _GLOBAL_TIME_QUEUE
 
 
-def get_step_time_queue() -> Queue:
-    """Return the shared STEP timing queue (batches)."""
-    return _STEP_TIME_QUEUE
+def get_step_time_queue(model_id: Optional[int] = None) -> Queue:
+    """Return the STEP timing queue for a model session.
+
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue
+        (backward-compat for samplers).
+    """
+    from traceml.session_registry import _registry, get_session
+
+    if model_id is not None:
+        return get_session(model_id).step_time_queue
+    # Fallback: return first session queue (single-model)
+    for sess in _registry.values():
+        return sess.step_time_queue
+    # No sessions yet; return a dummy queue
+    return Queue(maxsize=2048)
 
 
 def _enqueue_global(evt: TimeEvent) -> None:
@@ -134,13 +152,17 @@ def _enqueue_global(evt: TimeEvent) -> None:
         )
 
 
-def _enqueue_step_batch(batch: StepTimeBatch) -> None:
+def _enqueue_step_batch(
+    batch: StepTimeBatch,
+    queue: Queue,
+) -> None:
     """Best-effort enqueue STEP batch without blocking."""
     try:
-        _STEP_TIME_QUEUE.put_nowait(batch)
+        queue.put_nowait(batch)
     except Full:
         print(
-            f"[TraceML:Timing] Step queue full, dropping step batch {batch.step}",
+            "[TraceML:Timing] Step queue full, "
+            f"dropping step batch {batch.step}",
             file=sys.stderr,
         )
 
@@ -160,11 +182,20 @@ def record_event(evt: TimeEvent) -> None:
         _enqueue_global(evt)
 
 
-def flush_step_time_buffer(step: int) -> None:
-    """
-    Flush buffered STEP events as a single StepTimeBatch.
+def flush_step_time_buffer(
+    step: int,
+    model_id: Optional[int] = None,
+) -> None:
+    """Flush buffered STEP events as a single StepTimeBatch.
 
     Called once per optimizer step.
+
+    Parameters
+    ----------
+    step : int
+        Current training step.
+    model_id : int, optional
+        Model identity for session-scoped queue lookup.
     """
     if TRACEML_DISABLED:
         return
@@ -174,10 +205,13 @@ def flush_step_time_buffer(step: int) -> None:
     events: List[TimeEvent] = []
     while _STEP_BUFFER:
         evt = _STEP_BUFFER.popleft()
-        evt.step = step  # keep compatibility / make debugging easier
+        evt.step = step
         events.append(evt)
 
-    _enqueue_step_batch(StepTimeBatch(step=step, events=events))
+    queue = get_step_time_queue(model_id)
+    _enqueue_step_batch(
+        StepTimeBatch(step=step, events=events), queue
+    )
 
 
 @contextmanager

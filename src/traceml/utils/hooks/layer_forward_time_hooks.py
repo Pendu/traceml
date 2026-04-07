@@ -24,7 +24,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from queue import Full, Queue
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -32,12 +32,27 @@ import torch.nn as nn
 from traceml.utils.cuda_event_pool import get_cuda_event, return_cuda_event
 from traceml.utils.shared_utils import get_hookable_modules, model_is_on_cuda
 
-# Shared queue (consumer-facing)
-layer_forward_time_queue: Queue = Queue(maxsize=4096)
+def get_layer_forward_time_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return the layer forward time queue.
 
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
+    """
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
 
-def get_layer_forward_time_queue() -> Queue:
-    return layer_forward_time_queue
+    if model_id is not None:
+        return get_session(model_id).layer_forward_time_queue
+    for sess in _registry.values():
+        return sess.layer_forward_time_queue
+    return Queue(maxsize=4096)
 
 
 # Prevent double hook attachment
@@ -236,9 +251,10 @@ def flush_layer_forward_time_buffers(model: nn.Module, step: int) -> None:
     )
 
     try:
-        layer_forward_time_queue.put_nowait(event)
+        queue = get_layer_forward_time_queue(model_id)
+        queue.put_nowait(event)
     except Full:
-        # Drop silently to avoid backpressure on training
+        # Drop silently to avoid backpressure
         pass
 
 

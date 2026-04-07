@@ -18,15 +18,13 @@ Design principles
 import sys
 from dataclasses import dataclass
 from queue import Full, Queue
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 
 from traceml.utils.shared_utils import get_hookable_modules
 
-# Shared queue for gradient events
-layer_backward_memory_queue: Queue = Queue(maxsize=2048)
 
 # Registries to prevent multiple hook attachments per model
 _layer_backward_hook_registry: Dict[int, bool] = {}
@@ -59,13 +57,29 @@ class LayerBackwardMemoryEvents:
     step: int
 
 
-def get_layer_backward_queue() -> Queue:
-    """
-    Return the shared queue containing flushed backward memory events.
+def get_layer_backward_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return backward memory queue for a model session.
 
-    This queue is drained by the corresponding sampler.
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
     """
-    return layer_backward_memory_queue
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
+
+    if model_id is not None:
+        return get_session(
+            model_id
+        ).layer_backward_memory_queue
+    for sess in _registry.values():
+        return sess.layer_backward_memory_queue
+    return Queue(maxsize=2048)
 
 
 def _tensor_size(t: torch.Tensor) -> float:
@@ -182,7 +196,8 @@ def flush_layer_backward_memory_buffers(model: nn.Module, step: int) -> None:
         step=step,
     )
     try:
-        layer_backward_memory_queue.put_nowait(event)
+        queue = get_layer_backward_queue(model_id)
+        queue.put_nowait(event)
     except Full:
         # Drop silently to avoid training backpressure
         pass

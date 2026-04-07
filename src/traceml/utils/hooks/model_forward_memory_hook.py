@@ -6,8 +6,6 @@ from typing import Dict, Optional
 import torch
 import torch.nn as nn
 
-# Shared queue for model forward peak memory events
-model_forward_memory_queue: Queue = Queue(maxsize=128)
 
 # Registry to prevent multiple hook attachments per model
 _model_forward_memory_hook_registry: Dict[int, bool] = {}
@@ -16,8 +14,29 @@ _model_forward_memory_hook_registry: Dict[int, bool] = {}
 _model_forward_memory_buffer: Dict = {}
 
 
-def get_model_forward_memory_queue() -> Queue:
-    return model_forward_memory_queue
+def get_model_forward_memory_queue(
+    model_id: Optional[int] = None,
+) -> Queue:
+    """Return the model forward memory queue.
+
+    Parameters
+    ----------
+    model_id : int, optional
+        If given, returns the session-scoped queue.
+        If None, returns the first active session's queue.
+    """
+    from traceml.session_registry import (
+        _registry,
+        get_session,
+    )
+
+    if model_id is not None:
+        return get_session(
+            model_id
+        ).model_forward_memory_queue
+    for sess in _registry.values():
+        return sess.model_forward_memory_queue
+    return Queue(maxsize=128)
 
 
 @dataclass
@@ -90,7 +109,8 @@ def flush_model_forward_memory_buffers(model: nn.Module, step: int) -> None:
         return
     evt.step = step
     try:
-        model_forward_memory_queue.put_nowait(evt)
+        queue = get_model_forward_memory_queue(model_id)
+        queue.put_nowait(evt)
     except Full:
         pass
 

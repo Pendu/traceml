@@ -34,4 +34,4 @@ def flush_step_events(model: nn.Module, step: int) -> None:
     flush_layer_backward_time_buffers(model, step)
     flush_model_forward_memory_buffers(model, step)
     flush_step_memory_buffer(model, step)
-    flush_step_time_buffer(step)
+    flush_step_time_buffer(step, model_id=id(model))

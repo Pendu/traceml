@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from traceml.loggers.error_log import get_error_logger
 from traceml.samplers.schema.step_memory import StepMemorySample
-from traceml.utils.step_memory import step_memory_queue
+from traceml.utils.step_memory import get_step_memory_queue
 
 from .base_sampler import BaseSampler
 
@@ -36,7 +36,7 @@ class StepMemorySampler(BaseSampler):
         """
         Drain entire step memory queue.
         """
-        q = step_memory_queue
+        q = get_step_memory_queue()
         while not q.empty():
             try:
                 event = q.get_nowait()
