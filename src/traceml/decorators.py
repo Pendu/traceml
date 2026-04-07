@@ -23,7 +23,10 @@ from traceml.utils.hooks.layer_forward_time_hooks import (
 from traceml.utils.hooks.optimizer_hook import (
     ensure_optimizer_timing_installed,
 )
-from traceml.session_registry import get_session
+from traceml.session_registry import (
+    get_session,
+    register_model,
+)
 from traceml.utils.layer_parameter_memory import (
     collect_layer_parameter_memory,
 )
@@ -86,6 +89,7 @@ def trace_step(model: nn.Module):
         return
 
     session = get_session(id(model))
+    register_model(model, id(model))
     mem_tracker = StepMemoryTracker(model)
     step_completed = False
 
@@ -166,6 +170,7 @@ def trace_model_instance(
                 model
             )
             session = get_session(id(model))
+            register_model(model, id(model))
             session.model_queue.put(layer_memory)
 
         if trace_layer_forward_memory:

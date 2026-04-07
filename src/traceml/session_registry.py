@@ -12,6 +12,7 @@ Design
 - _GLOBAL_TIME_QUEUE stays global (not per-model, per D-08)
 """
 
+import weakref
 from collections import deque
 from dataclasses import dataclass, field
 from queue import Queue
@@ -49,6 +50,25 @@ class SessionState:
 
 
 _registry: Dict[int, SessionState] = {}
+_weak_refs: Dict[int, weakref.finalize] = {}
+
+
+def _cleanup_session(model_id: int) -> None:
+    """Weak-ref callback: remove session on model GC."""
+    _registry.pop(model_id, None)
+    _weak_refs.pop(model_id, None)
+
+
+def register_model(model, model_id: int) -> None:
+    """Register weak-ref finalizer for automatic cleanup.
+
+    Call after get_session() when you have the model object.
+    Safe to call multiple times (idempotent).
+    """
+    if model_id not in _weak_refs:
+        _weak_refs[model_id] = weakref.finalize(
+            model, _cleanup_session, model_id
+        )
 
 
 def get_session(model_id: int) -> SessionState:
@@ -72,6 +92,9 @@ def get_session(model_id: int) -> SessionState:
 def remove_session(model_id: int) -> None:
     """Remove session state when model is no longer traced."""
     _registry.pop(model_id, None)
+    finalizer = _weak_refs.pop(model_id, None)
+    if finalizer is not None:
+        finalizer.detach()
 
 
 def active_sessions() -> int:

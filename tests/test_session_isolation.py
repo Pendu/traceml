@@ -9,8 +9,10 @@ import pytest
 from traceml.session_registry import (
     SessionState,
     _registry,
+    _weak_refs,
     active_sessions,
     get_session,
+    register_model,
     remove_session,
 )
 
@@ -19,8 +21,10 @@ from traceml.session_registry import (
 def _clear_registry():
     """Ensure a clean registry for every test."""
     _registry.clear()
+    _weak_refs.clear()
     yield
     _registry.clear()
+    _weak_refs.clear()
 
 
 class TestSessionRegistry:
@@ -62,6 +66,35 @@ class TestSessionRegistry:
             s.step = i
         for i in range(10):
             assert get_session(i).step == i
+
+    def test_gc_cleanup(self):
+        """Model GC triggers automatic session removal."""
+        import gc
+
+        import torch.nn as nn
+
+        model = nn.Linear(2, 2)
+        mid = id(model)
+        get_session(mid)
+        register_model(model, mid)
+        assert active_sessions() == 1
+        del model
+        gc.collect()
+        assert active_sessions() == 0
+
+    def test_gc_no_leak_after_many_models(self):
+        """Many models created and discarded don't leak."""
+        import gc
+
+        import torch.nn as nn
+
+        for _ in range(50):
+            m = nn.Linear(1, 1)
+            get_session(id(m))
+            register_model(m, id(m))
+        del m
+        gc.collect()
+        assert active_sessions() == 0
 
     def test_trace_step_uses_session(self):
         """Verify trace_step increments session step counter.
