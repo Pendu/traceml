@@ -806,4 +806,3 @@ Cross-references between the files: a P-entry in the PyTorch file links back to 
 **Concepts introduced:** crash isolation via address-space separation, GIL contention in the same process, NCCL all-reduce barrier, straggler effect in DDP, launcher composability, CUDA fork-safety.
 
 ---
-

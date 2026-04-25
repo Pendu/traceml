@@ -1511,7 +1511,7 @@ self._dbs: Dict[int, Dict[str, Database]] = {}
 self._last_seen: Dict[int, float] = {}
 ```
 
-`self._dbs[rank][sampler_name]` returns the bounded `Database` for that pair. **It re-uses the exact same `Database` class** the rank side uses — same deque, same `add_record`, same append counter. That symmetry is what makes the renderers in [W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql) framework-agnostic: they read from a `Database`, and they don't care whether it was populated by a local sampler or by network ingestion.
+`self._dbs[rank][sampler_name]` returns the bounded `Database` for that pair. **It reuses the exact same `Database` class** the rank side uses — same deque, same `add_record`, same append counter. That symmetry is what makes the renderers in [W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql) framework-agnostic: they read from a `Database`, and they don't care whether it was populated by a local sampler or by network ingestion.
 
 **Lazy `(rank, sampler)` creation (lines 61–88).** `_get_or_create_db` creates the inner dict on first sight of a new rank, then creates the `Database` on first sight of a new sampler from that rank. So the aggregator doesn't need to know in advance how many ranks will connect or which samplers each rank will run — the topology is discovered dynamically from incoming payloads. This matches how torchrun launches ranks ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator)): the aggregator starts before any rank, and ranks connect whenever they finish their import phase.
 

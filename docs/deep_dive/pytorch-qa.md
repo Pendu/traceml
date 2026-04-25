@@ -3410,6 +3410,3 @@ For "where is my activation memory going?", TraceML's number is correct. For "wh
 
 
 <!-- New entries appended below. Format matches the existing style above. New questions get the next P-number; pick the right sub-topic section and add a TOC entry at the top. -->
-
-
-
