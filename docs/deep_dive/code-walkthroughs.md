@@ -6,6 +6,17 @@ Walkthroughs assume the vocabulary from those Q&As — when a walkthrough cross-
 
 **Started:** 2026-04-24
 
+## Physical view — visual map
+
+The diagram below maps every walkthrough below onto the three-process runtime
+(CLI launcher / training rank / aggregator). Each box is annotated with the
+walkthrough number (`[W1]` … `[W12]`) it belongs to — use it as a legend while
+reading the page.
+
+![TraceML physical view](../assets/architecture_physical_view.png)
+
+> Editable source: [`architecture_physical_view.excalidraw`](../assets/architecture_physical_view.excalidraw) — open in [excalidraw.com](https://excalidraw.com) to update.
+
 ---
 
 ## How this file is organized

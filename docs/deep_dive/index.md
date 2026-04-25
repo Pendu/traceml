@@ -17,6 +17,15 @@ the architecture.
 - **[PyTorch Q&A](pytorch-qa.md)** — PyTorch internals relevant to TraceML's
   instrumentation strategy (hooks, autograd, CUDA timing, DDP).
 
+## Physical view
+
+The diagram below maps the codebase onto the three-process runtime
+(CLI launcher / training rank / aggregator). Boxes are annotated with the
+walkthrough numbers (`[W1]` … `[W12]`) they belong to — see
+[Code walkthroughs](code-walkthroughs.md) for the file-by-file readings.
+
+[![TraceML physical view](../assets/architecture_physical_view.png)](code-walkthroughs.md#physical-view-visual-map)
+
 ## How to read these
 
 These pages reference specific files and line numbers in TraceML at a point
