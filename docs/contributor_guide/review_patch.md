@@ -1,8 +1,5 @@
 # How to review an instrumentation-patch PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_patch.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies an instrumentation patch in `src/traceml/utils/patches/`. It assumes you have already read `add_patch.md` (the author's guide) and have a working mental model of W3 (user-facing API) and W4 (patches + timing primitives). The seven-step workflow in §1 is the meta-pattern that future reviewer guides (`review_sampler.md`, `review_renderer.md`, ...) will reuse — only §3 onward is patch-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: training process only (aggregator side untouched)
 PyTorch coupling: deep
 Reference reviews: PR #87 (h2d timing) — see `Notes/PR_87_review_through_walkthroughs.md`
 Companion author guide: `add_patch.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow (applies to every TraceML PR)
@@ -33,7 +29,7 @@ This same seven-step shape applies to sampler PRs, renderer PRs, transport PRs �
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 The first thing you do with a patch PR is **not** open the diff. Open [`traceml_learning_code_walkthroughs.md`][W4] and re-read W3 §"Patch policy state machine" and W4 §"5-step patch recipe." Two reasons:
 
@@ -265,7 +261,7 @@ This is the artifact that turns "I think this is buggy" into "here's the 3-line 
 
 ```
 # Setup
-git -C /teamspace/studios/this_studio/traceml checkout pr-87
+git -C <repo> checkout pr-87
 # (Lightning Studio with GPU)
 
 # Command — save as repro.py and run with:

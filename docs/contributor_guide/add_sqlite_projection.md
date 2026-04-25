@@ -1,8 +1,5 @@
 # How to add a new SQLite projection writer
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This guide teaches you how to bridge a sampler's wire payload to the query-friendly SQLite tables that renderers and diagnostics read from. It assumes you have already worked through `add_sampler.md` (upstream of this guide) and skimmed `add_renderer.md` §7 (downstream consumer of this guide), and that `pip install -e ".[dev,torch]"` works in your checkout.
 
 ---
@@ -10,9 +7,6 @@ Feature type: SQLite projection writer
 Risk level: medium
 Cross-cutting impact: one subsystem (aggregator persistence), but read by every windowed renderer downstream
 PyTorch coupling: none
-Reference PRs: —
-Companion reviewer guide: none yet
-Last verified: 2026-04-25
 ---
 
 ## 1. Intro and mental model

@@ -1,8 +1,5 @@
 # How to add a new instrumentation patch
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 ---
 Feature type: instrumentation patch
 Risk level: high
@@ -10,7 +7,6 @@ Cross-cutting impact: multiple subsystems
 PyTorch coupling: deep
 Reference PRs: #87 (H2D `.to()` timing), prior art for `forward_auto_timer_patch.py`, `backward_auto_timer_patch.py`, `dataloader_patch.py`
 Companion reviewer guide: `review_patch.md`
-Last verified: 2026-04-25
 ---
 
 This guide teaches you how to add a new auto-instrumentation patch to TraceML. It assumes you have read `add_sampler.md` (because every patch ultimately feeds an existing sampler), the top-level `CLAUDE.md`, and the PR #87 review file at `traceml/Notes/PR_87_review_through_walkthroughs.md`. That review is the freshest exemplar — go re-read it before opening an editor for any patch PR. Section 2.1 of that file (the four-patch consistency table) is the single most useful artifact for grading whether your design is consistent with the family.

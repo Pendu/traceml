@@ -1,12 +1,6 @@
 # Pipeline walkthrough — one telemetry event, end-to-end
 
-> Internal contributor reference. Audience: anyone touching TraceML code.
-> Use this as the shared mental model that every per-feature contributor
-> guide refers back to.
-
 If you can trace a single telemetry event from the moment it's born inside the user's training process to the moment it renders as a number on someone's terminal, you understand TraceML. This document follows one event through eight stations. The deep coverage of each station lives in the [W6–W10](../deep_dive/code-walkthroughs.md) walkthroughs and in [PR #87 Appendix D](../deep_dive/pr_reviews/pr-87-h2d-timing.md) — this is the condensed map.
-
-**Last verified:** 2026-04-25.
 
 ---
 
@@ -212,6 +206,6 @@ If you can answer these without re-reading, you have the mental model.
 
 - **Deep walkthroughs:** [W6 (samplers)](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows), [W7 (DB / sender)](../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8 (transport)](../deep_dive/code-walkthroughs.md#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9 (aggregator core)](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes), [W10 (renderers / drivers)](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 - **Concept Q&A:** [Q10 (TCP)](../deep_dive/learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q15 (CUDA streams)](../deep_dive/learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread).
-- **PyTorch internals:** [P48 (`_call_impl`)](../deep_dive/pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49 (hook firing order)](../deep_dive/pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P51 (`torch.cuda.*` API stability)](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd).
+- **PyTorch internals:** [P48 (`_call_impl`)](../deep_dive/pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49 (hook firing order)](../deep_dive/pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P51 (`torch.cuda.*` API stability)](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions).
 - **The full pedagogical version:** [PR #87 Appendix D](../deep_dive/pr_reviews/pr-87-h2d-timing.md) — Stations 1–3 are written in detail there with checkpoint questions; Stations 4–8 above complete what that document defers.
 - **Cross-cutting rules:** [principles.md](principles.md).

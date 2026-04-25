@@ -1,8 +1,5 @@
 # How to review a CLI-change PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_cli.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies a CLI surface in `src/traceml/cli.py` — a new subcommand, a new flag, a new `--mode` choice, a new profile, or a new `TRACEML_*` environment variable. It assumes you have already read `add_cli.md` (the author guide) and have a working mental model of W1 (CLI launcher) and W2 (per-rank runtime). The seven-step workflow in §1 is the meta-pattern shared with `review_patch.md` — only §3 onward is CLI-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: multiple subsystems (CLI process → aggregator process �
 PyTorch coupling: none directly (but profile flags gate sampler choice)
 Reference reviews: none called out yet — the failure-mode catalogue here is distilled from `add_cli.md` §9 and the live code-base divergences listed in §11
 Companion author guide: `add_cli.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow (applies to every TraceML PR)
@@ -33,7 +29,7 @@ This same seven-step shape applies to patch PRs (`review_patch.md`), sampler PRs
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 The first thing you do with a CLI PR is **not** open the diff. Open [`traceml_learning_code_walkthroughs.md`][W1] and re-read W1 §"top-level launcher" and W2 §"per-rank runtime — executor read sites." Two reasons:
 
@@ -366,7 +362,7 @@ This is the artifact that turns "I think this is buggy" into "here's the 3-line 
 
 ```python
 # Setup
-git -C /teamspace/studios/this_studio/traceml checkout pr-XX
+git -C <repo> checkout pr-XX
 
 # Command — save as repro.py and run with: python repro.py
 from traceml.cli import build_parser

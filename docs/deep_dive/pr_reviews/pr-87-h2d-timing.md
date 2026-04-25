@@ -1,6 +1,6 @@
-# PR #87 — Review re-read through your walkthroughs
+# PR #87 — Review re-read through the walkthroughs
 
-> **Purpose.** This is the synthesis doc. You've built deep, structured architectural knowledge in three places — [traceml_pytorch_qa.md](../pytorch-qa.md), [traceml_learning_qa.md](../learning-qa.md), and [traceml_learning_code_walkthroughs.md](../code-walkthroughs.md). The original review (`PR_87_h2d_timing_review.md`) was written before that knowledge was visible. This doc re-reads the PR through the lens of what you actually know now.
+> **Purpose.** This is the synthesis doc. These docs build deep, structured architectural knowledge in three places — [traceml_pytorch_qa.md](../pytorch-qa.md), [traceml_learning_qa.md](../learning-qa.md), and [traceml_learning_code_walkthroughs.md](../code-walkthroughs.md). The original review (`PR_87_h2d_timing_review.md`) was written before that knowledge was visible. This doc re-reads the PR through the lens of what you actually know now.
 >
 > **What's different here.** Three things: (1) the per-file diff anchored to the W-section that explains its surroundings, (2) a consistency analysis across the four auto-patches now in TraceML's patch family, (3) every review finding sharpened with citations to your own docs and — in two cases — fundamentally re-framed because the walkthroughs reveal the original framing was incomplete or wrong.
 >
@@ -11,7 +11,7 @@
 
 ---
 
-## 1. The PR re-anchored to your walkthroughs
+## 1. The PR re-anchored to the walkthroughs
 
 PR #87 touches 7 files. For each, the W-section that explains the surrounding context, then what the PR adds, in your existing vocabulary.
 
@@ -270,7 +270,7 @@ And [W4 line 770](../code-walkthroughs.md) on `try_resolve`:
 
 So **`elapsed_time` reads stream-side timestamps after the GPU has signalled completion of `gpu_end`** — meaning the elapsed includes everything between the two recorded points on the stream, including the async DMA. The docstring's claim that the events only "bound the time until the DMA is queued" contradicts both your own P3 understanding of how cudaMemcpyAsync works *and* W4's description of how try_resolve resolves elapsed time.
 
-The docstring isn't just imprecise — it's actively wrong, and the correction is in your own notes.
+The docstring isn't just imprecise — it's actively wrong, and the correction is in these notes.
 
 **Fix:** rewrite the GPU timing paragraph to:
 > "CUDA events are recorded on the current stream around the `.to()` call. `start.record()` enqueues a timestamp marker before the DMA op; `end.record()` enqueues one after. Once `end` fires (resolved later via `event.query()` in the sampler), `start.elapsed_time(end)` returns the GPU-side wall-clock duration between the two markers — including the asynchronous DMA itself. Accuracy is the same for `non_blocking=True` and `non_blocking=False`."
@@ -457,8 +457,8 @@ Before posting the comments, run these checks. Each is concrete and bounded.
 ### 5.1 Reproduce the Module.to overcount
 
 ```bash
-git -C /teamspace/studios/this_studio/traceml checkout pr-87
-cd /teamspace/studios/this_studio/traceml
+git -C <repo> checkout pr-87
+cd <repo>
 ```
 
 Then a 30-line script:
@@ -523,7 +523,7 @@ Trivial. Confirms §3.5.
 ### 5.5 (Optional) Run the existing test suite
 
 ```bash
-cd /teamspace/studios/this_studio/traceml
+cd <repo>
 pytest tests/test_h2d_timing.py -v
 ```
 
@@ -643,13 +643,13 @@ The PR branch is already fetched locally as `pr-87`:
 
 ```bash
 # Switch to review it
-git -C /teamspace/studios/this_studio/traceml checkout pr-87
+git -C <repo> checkout pr-87
 
 # Run the tests
 pytest tests/test_h2d_timing.py -v
 
 # Return to your working branch
-git -C /teamspace/studios/this_studio/traceml checkout docs/dev-docs-site
+git -C <repo> checkout docs/dev-docs-site
 ```
 
 ---
@@ -901,7 +901,7 @@ Monkey-patching a public PyTorch symbol is the main risk surface. Nothing else t
 
 ## Appendix D: Pipeline walkthrough — `_traceml_internal:h2d_time` end-to-end
 
-**Note:** Originally a separate doc (`PR_87_architecture_walkthrough.md`), folded in here as a reference. This is the **learning dialogue** form — pedagogical, station-by-station, with checkpoint questions left in place. Useful when you (or future-you) want to re-build the mental map of TraceML's telemetry pipeline. **Stations 1–3 are written; Stations 4–7 are stubs** (covered in your own [W6–W9 walkthroughs](../code-walkthroughs.md), which are deeper anyway).
+**Note:** Originally a separate doc (`PR_87_architecture_walkthrough.md`), folded in here as a reference. This is the **learning dialogue** form — pedagogical, station-by-station, with checkpoint questions left in place. Useful when you (or a future reader) want to re-build the mental map of TraceML's telemetry pipeline. **Stations 1–3 are written; Stations 4–7 are stubs** (covered in your own [W6–W9 walkthroughs](../code-walkthroughs.md), which are deeper anyway).
 
 **Method.** Take one imaginary `.to("cuda")` call inside `trace_step()` and follow its corresponding `_traceml_internal:h2d_time` event from the moment it's born (inside the patched method) to the moment it renders as a number in someone's terminal. Every station = one architectural layer.
 
@@ -991,7 +991,7 @@ We'll hit 7 stations. The first three live inside the training process; stations
   Station 7 · Live display driver flushes to terminal / NiceGUI
 ```
 
-Stations 1–3 are written below. Stations 4–7 are sketched at the end; the deeper coverage lives in [W6](../code-walkthroughs.md), [W7](../code-walkthroughs.md), [W8](../code-walkthroughs.md), [W9](../code-walkthroughs.md) of your own walkthroughs.
+Stations 1–3 are written below. Stations 4–7 are sketched at the end; the deeper coverage lives in [W6](../code-walkthroughs.md), [W7](../code-walkthroughs.md), [W8](../code-walkthroughs.md), [W9](../code-walkthroughs.md) of the walkthroughs.
 
 ---
 
@@ -1175,9 +1175,9 @@ These were the comprehension checks before continuing to Stations 4–7. Still u
 
 ---
 
-### D.4 Stations 4–7 (sketched only — see your own walkthroughs)
+### D.4 Stations 4–7 (sketched only — see the walkthroughs)
 
-These were placeholders never expanded. Refer to the deeper coverage in your own walkthroughs:
+These were placeholders never expanded. Refer to the deeper coverage in the walkthroughs:
 
 - **Station 4** — `Database` (bounded deque per table) + `DBIncrementalSender` (ships only new rows via append counter). Inside the training process. → **[W7](../code-walkthroughs.md)**.
 - **Station 5** — TCP wire (msgspec-framed). `TCPServer` in aggregator. Routing to `RemoteDBStore` (rank-aware wrapper that keeps rank 0, rank 1, ... separate). → **[W8](../code-walkthroughs.md)**.

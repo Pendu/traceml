@@ -1,8 +1,5 @@
 # How to add a new CLI command, flag, or mode
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This guide teaches you how to extend the TraceML CLI surface — a new subcommand, a new flag, a new `--mode` choice, a new profile, or a new `TRACEML_*` environment variable. It assumes you have read `add_sampler.md` and `add_renderer.md`, can run the test suite, and have a local checkout of the repository.
 
 ---
@@ -11,8 +8,6 @@ Risk level: medium  (anything user-facing breaks v0.2.x users on PyPI)
 Cross-cutting impact: multiple subsystems (CLI process → aggregator process → executor → runtime → samplers)
 PyTorch coupling: none directly  (but profile flags gate sampler choice, and samplers couple to PyTorch)
 Reference PRs: none called out yet — flag changes have historically gone in with the feature that needed them
-Companion reviewer guide: none yet
-Last verified: 2026-04-25
 ---
 
 ## 1. Intro and mental model

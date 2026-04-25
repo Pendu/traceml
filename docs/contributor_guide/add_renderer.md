@@ -1,11 +1,7 @@
 # How to add a new renderer
 
-Internal contributor guide. Audience: new TraceML contributors (primarily one
-trusted co-founder). Task-oriented, concrete, opinionated where the codebase
-has an opinion.
-
-This guide assumes you have already read the top-level `CLAUDE.md` and have a
-working `pip install -e ".[dev,torch]"` checkout.
+This guide is task-oriented, concrete, and opinionated where the codebase has
+an opinion. It assumes a working `pip install -e ".[dev,torch]"` checkout.
 
 ---
 
@@ -1127,7 +1123,7 @@ Copy into the PR description.
 
 ## 12. Appendix: adding a whole new display driver
 
-!!! danger "Very rare. Talk to Abhinav first."
+!!! danger "Very rare. talk to maintainers first."
     The existing three drivers (CLI, dashboard, summary) cover current use
     cases. A fourth (e.g. `JsonStreamDisplayDriver` for CI) is a design
     decision, not an implementation detail.
@@ -1177,6 +1173,6 @@ Things not fully resolved in source:
   (`rank_filter`, `rank`, hard-coded rank 0). Pick one and document.
 - **`page_layout.py::TRACE_ML_PAGE`** 2D layout is not referenced by the
   NiceGUI pages (which hand-roll layout in `pages.py`). Possibly dead
-  code or aspirational — confirm with Abhinav before relying on it.
+  code or aspirational — confirm with maintainers before relying on it.
 
 Add new findings to this section in your PR.

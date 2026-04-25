@@ -1,8 +1,5 @@
 # How to review a sampler PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_sampler.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies a sampler in `src/traceml/samplers/`. It assumes you have already read `add_sampler.md` (the author's guide), `principles.md` (cross-cutting rules), and have a working mental model of [W6][W6] (samplers + schemas) and [W7][W7] (Database + sender). The seven-step workflow in §1 is the same shape that `review_patch.md` uses; only §3 onward is sampler-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: training process (per-rank runtime) plus aggregator-side p
 PyTorch coupling: shallow (most samplers are NVML / psutil; CUDA-touching samplers must use `_cuda_safe_to_touch`)
 Reference reviews: none yet — this guide is the first reviewer-side rulebook for the family
 Companion author guide: `add_sampler.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow (applies to every TraceML PR)
@@ -33,7 +29,7 @@ This same seven-step shape applies to patch PRs, renderer PRs, transport PRs —
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 The first thing you do with a sampler PR is **not** open the diff. Open [`traceml_learning_code_walkthroughs.md`][W6] and re-read W6 §"sampler tick lifecycle" and W7 §"DBIncrementalSender — only-new-rows shipping." Two reasons:
 
@@ -381,7 +377,7 @@ This is the artifact that turns "I think this is buggy" into "here's the 3-line 
 
 ```
 # Setup
-git -C /teamspace/studios/this_studio/traceml checkout pr-N
+git -C <repo> checkout pr-N
 # CPU-only OK.
 
 # Command — save as repro.py:
@@ -578,7 +574,7 @@ Where the reviewer's playbook is currently underspecified or relies on folklore.
 
 - **There's no central registry of sampler table names.** A reviewer enforcing §5.3 (wire-format-as-contract) has to grep across renderers and SQLite projection writers and trust their grep. Worth a constants module `src/traceml/samplers/table_names.py` with every table name exported as a constant; samplers import the constant; renderers and projection writers import the same constant. A test would then assert no two constants collide and every table name is referenced by at least one consumer. Not yet written.
 
-- **No reviewer-side overhead harness.** A reviewer who wants to check §5.2 ("estimate per-tick cost and row count") needs to drop a `timeit` block by hand. The benchmark workflow at v0.2.9 (Item 2 in Abhinav's brief) is the formal answer; until it lands, overhead claims are folklore. A `tests/sampler_overhead/` directory with parametrised fixtures (autouse env, mocked sources, `pytest-benchmark` integration) would make per-PR overhead claims reproducible in 5 lines instead of 30.
+- **No reviewer-side overhead harness.** A reviewer who wants to check §5.2 ("estimate per-tick cost and row count") needs to drop a `timeit` block by hand. The benchmark workflow at v0.2.9 is the formal answer; until it lands, overhead claims are folklore. A `tests/sampler_overhead/` directory with parametrised fixtures (autouse env, mocked sources, `pytest-benchmark` integration) would make per-PR overhead claims reproducible in 5 lines instead of 30.
 
 - **Profile gating has no contract test.** A sampler in the wrong profile branch silently runs in `watch` when it should be `deep`-only. The smoke test in `principles.md` §6 catches the egregious case but not subtle gating bugs. A `tests/test_profile_gating.py` that constructs `TraceMLRuntime` for each profile and asserts the sampler set is exactly what `_build_samplers` should produce would make §4.6 a regression test instead of a code-review checklist item.
 

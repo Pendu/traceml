@@ -1,8 +1,5 @@
 # How to add a new diagnostic verdict
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This guide teaches you how to add a new diagnostic verdict to TraceML. It assumes you have read `add_sampler.md`, `add_renderer.md`, and the top-level `CLAUDE.md`, and that `pip install -e ".[dev,torch]"` is working.
 
 ---
@@ -11,8 +8,6 @@ Risk level: medium (verdicts shape user trust; false positives are corrosive)
 Cross-cutting impact: multiple subsystems (engine + live renderer + summary adapter + presentation)
 PyTorch coupling: none directly (consumes sampler outputs, not PyTorch internals)
 Reference PRs: none called out yet — `step_time_diagnosis` and `step_memory_diagnosis` are the only landed exemplars
-Companion reviewer guide: none yet
-Last verified: 2026-04-25
 ---
 
 ## 1. Intro and mental model

@@ -1,10 +1,11 @@
 # TraceML Architecture — Learning Q&A
 
-Personal Q&A log for deepening understanding of the TraceML architecture.
-Questions from Abhijeet, answers from Claude. No question is too basic.
+A Q&A log accumulated while reading the TraceML codebase in depth, covering the
+concepts a new contributor needs to understand the architecture: OS basics,
+networking, Python internals, CUDA, distributed training, and how each shows
+up in TraceML.
 
-**Started:** 2026-04-24
-**Reference docs:** `traceml/docs/developer_guide/architecture.md`
+**Reference:** [Architecture overview](../developer_guide/architecture.md).
 
 ---
 

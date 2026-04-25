@@ -1,8 +1,5 @@
 # How to add a new sampler
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This guide teaches you how to add a new telemetry sampler to TraceML. It
 assumes you have the repository checked out, can run the test suite, and have
 read `CLAUDE.md` at the repo root. Everything below is anchored in the

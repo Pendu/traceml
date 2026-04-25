@@ -1,13 +1,8 @@
 # Cross-cutting principles
 
-> Internal contributor reference. Audience: anyone touching TraceML code.
-> Every per-feature guide in this folder links here instead of restating these
-> rules. Read once; refer back from the per-feature guide you're using.
-
 ---
 Document type: cross-cutting reference
 Applies to: every contributor guide and every PR
-Last verified: 2026-04-25
 ---
 
 ## 1. The four load-bearing principles
@@ -141,7 +136,7 @@ Domain-prefix when ambiguous: `gpu_mem_used`, not `mem_used`, when the same row 
 TraceML reaches into PyTorch internals — `nn.Module._call_impl`, autograd hooks, the DataLoader iterator, CUDA events. This is the maintenance treadmill the project has explicitly accepted in exchange for zero-code instrumentation. The discipline:
 
 - **Patch the smallest stable surface** that gives you what you need. `_call_impl` is more stable than monkey-patching `nn.Module.__init__`.
-- **Document the version dependency.** Every patch file should note which PyTorch versions it has been tested against. See [P51](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the contract.
+- **Document the version dependency.** Every patch file should note which PyTorch versions it has been tested against. See [P51](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions) for the contract.
 - **`torch.compile` is the open question.** Compiled regions bypass Python frame execution; Python-level hooks become invisible. The current architecture handles eager-mode training fine; compiled-graph support is a roadmap item, not a present capability.
 - **Never call `torch.cuda.synchronize()` from instrumentation code.** Synchronization serializes the GPU and destroys the overhead budget. Use the async `event.query()` resolution path via the CUDA event pool.
 - **Reuse CUDA events.** `get_cuda_event()` / `return_cuda_event()` from `utils/cuda_event_pool.py`. Never `torch.cuda.Event(enable_timing=True)` in a hot loop — the allocation is expensive and the events leak if not pooled.
@@ -185,7 +180,7 @@ Use these terms consistently in code, comments, commit messages, and PR descript
 
 Things this principles document does not yet pin down:
 
-- **Overhead budgets are folklore.** No formal benchmark harness gates them; the v0.2.9 workflow is in design (Item 2 in Abhinav's brief). Numbers in §5 are targets, not test thresholds.
+- **Overhead budgets are folklore.** No formal benchmark harness gates them; the v0.2.9 workflow is in design. Numbers in §5 are targets, not test thresholds.
 - **CHANGELOG discipline is new.** Existing PRs don't all have entries; backfilling is out of scope. Going forward is the policy.
 - **Schema versioning has no first-class table.** The wire-compat rules in §3 are convention, not enforcement. A future `schema_version` table would make breaking changes detectable rather than silent.
 - **`torch.compile` strategy** is open-ended. When >50% of training jobs are compiled, the patch architecture needs an answer. Not a 2026 problem.

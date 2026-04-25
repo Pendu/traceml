@@ -1,8 +1,5 @@
 # How to land a wire-format / schema-migration change
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This is the most cautious guide in the family. You are reading it because you
 are about to touch one of the five contracts that survives across processes
 and across versions. Every existing user on `traceml-ai==0.2.x` is a
@@ -13,9 +10,6 @@ Feature type: wire format / schema migration
 Risk level: HIGH (every existing v0.2.x user is a stakeholder)
 Cross-cutting impact: every subsystem (sampler, projection writer, renderer, summary, CLI, env var)
 PyTorch coupling: indirect
-Reference PRs: none — no historical wire-format break to point at
-Companion reviewer guide: none yet
-Last verified: 2026-04-25
 ---
 
 ## 1. Intro and mental model
@@ -1290,11 +1284,11 @@ Copy this into the PR description.
 ### Coordination
 
 - [ ] **Coordinator review.** This PR is read by both project
-      maintainers (Abhinav and Abhijeet). Wire-format breaks need
+      maintainers (both maintainers). Wire-format breaks need
       two-person sign-off. Flagged at PR-open time, not at merge time.
 - [ ] If touching diagnosis JSON: TraceOpt-side ingest impact
-      documented (even if TraceOpt doesn't yet exist; future-you will
-      thank present-you for the note).
+      documented (even if TraceOpt doesn't yet exist; a future reader will
+      thank the present writer for the note).
 
 ### Hygiene
 

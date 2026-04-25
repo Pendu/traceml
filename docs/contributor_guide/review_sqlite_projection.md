@@ -1,8 +1,5 @@
 # How to review an SQLite-projection-writer PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_sqlite_projection.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies an SQLite projection writer in `src/traceml/aggregator/sqlite_writers/`. It assumes you have already read `add_sqlite_projection.md` (the author's guide) and have a working mental model of W7 (database + sender) and W9 (aggregator core). The seven-step workflow in §1 is the meta-pattern that future reviewer guides (`review_sampler.md`, `review_renderer.md`, ...) reuse — only §3 onward is projection-writer-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: aggregator persistence layer; consumed by every windowed r
 PyTorch coupling: none
 Reference reviews: — (no shipped projection-writer PRs as of 2026-04-25)
 Companion author guide: `add_sqlite_projection.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow (applies to every TraceML PR)
@@ -33,7 +29,7 @@ This same seven-step shape applies to patch PRs, sampler PRs, renderer PRs, tran
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 The first thing you do with a projection-writer PR is **not** open the diff. Open [`traceml_learning_code_walkthroughs.md`][W9] and re-read W7 §"DBIncrementalSender — `_last_sent_seq` discipline" and W9 §"`SQLiteWriterSimple._flush_once` and the `_PROJECTION_WRITERS` dispatch loop." Two reasons:
 
@@ -375,7 +371,7 @@ This is the artifact that turns "I think this is buggy" into "here's the 3-line 
 
 ```bash
 # Setup
-git -C /teamspace/studios/this_studio/traceml checkout pr-<N>
+git -C <repo> checkout pr-<N>
 pip install -e ".[dev,torch]"
 
 # Command — run any session that exercises the new sampler

@@ -1,8 +1,5 @@
 # How to add a new framework integration
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> being onboarded to TraceML. Not for public docs.
-
 This guide teaches you how to add a new framework integration — a thin adapter that lets users of HuggingFace `Trainer`, PyTorch Lightning, HuggingFace Accelerate, or similar training-loop frameworks get TraceML telemetry by adding **one line** instead of editing their training code. It assumes you have read the top-level `CLAUDE.md`, have a working `pip install -e ".[dev,torch]"` checkout, and have at least skimmed `add_sampler.md` so you understand what the rest of the pipeline does with the events you emit.
 
 ---
@@ -10,9 +7,6 @@ Feature type: framework integration
 Risk level: medium (framework API changes break the integration)
 Cross-cutting impact: training process only (no aggregator changes)
 PyTorch coupling: indirect (via the framework)
-Reference PRs: —
-Companion reviewer guide: none yet
-Last verified: 2026-04-25
 ---
 
 ## 1. Intro and mental model

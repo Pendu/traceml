@@ -1,10 +1,6 @@
 # Contributor Guides — TraceML
 
-> Internal index. Audience: one trusted co-founder / new engineer being onboarded to TraceML. Not for public docs.
-
 This folder is the playbook for extending TraceML. Each guide covers one feature type end-to-end — when it applies, what files you touch, what conventions you follow, what to check before opening a PR. Reviewer guides cover the same axis from the other side: what to verify before approving.
-
-**Last verified:** 2026-04-25.
 
 ---
 
@@ -51,7 +47,7 @@ What are you trying to do?
 │   └── add_integration.md
 │
 └── Change the wire format / schema
-    └── change_wire_format.md  (high-risk — talk to Abhinav first)
+    └── change_wire_format.md  (high-risk — talk to maintainers first)
 ```
 
 ---
@@ -94,7 +90,7 @@ A reviewer guide for `add_integration.md` and `change_wire_format.md` is not yet
 
 Each author guide follows the same structure (so you can navigate predictably): intro and mental model → decisions to make → anatomy of an existing exemplar → step-by-step walkthrough of a hypothetical new feature → common patterns and exemplars → schema/contract rules → overhead budget → testing → common pitfalls → PR checklist → appendix → gaps and ambiguities.
 
-Each guide opens with a metadata block — feature type, risk level, cross-cutting impact, PyTorch coupling, reference PRs, companion reviewer guide, last-verified date — so you can self-assess stakes before diving in.
+Each guide opens with a metadata block — feature type, risk level, cross-cutting impact, PyTorch coupling — so you can self-assess stakes before diving in.
 
 The voice is imperative and opinionated. "Subclass `BaseSampler`. Pass two strings." Not "you might consider subclassing." If the codebase has a house style, the guide enforces it; if it doesn't, the guide says so explicitly in the gaps section.
 
@@ -102,9 +98,8 @@ The voice is imperative and opinionated. "Subclass `BaseSampler`. Pass two strin
 
 ## How to keep these guides current
 
-- Each guide carries a `Last verified:` date in its metadata block. When you touch the underlying subsystem, update the date.
 - The "Gaps and ambiguities" section at the end of each guide is the auditable surface — if the codebase resolves a gap, edit the section.
-- Trigger conditions: if the PyTorch surfaces a guide depends on change shape (especially `_call_impl`, hook semantics, or CUDA event APIs), the guide needs revisiting. See [P51](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the version contract.
+- Trigger conditions: if the PyTorch surfaces a guide depends on change shape (especially `_call_impl`, hook semantics, or CUDA event APIs), the guide needs revisiting. See [P51](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions) for the version contract.
 - Quarterly re-verification cadence is the floor, not the ceiling.
 
 ---

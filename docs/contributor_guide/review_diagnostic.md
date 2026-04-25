@@ -1,8 +1,5 @@
 # How to review a diagnostic-verdict PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_diagnostic.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies a diagnostic verdict in `src/traceml/diagnostics/` (and its summary adapter under `aggregator/summaries/`). It assumes you have already read `add_diagnostic.md` (the author's guide) and have a working mental model of [W11](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis). The seven-step workflow in §1 is the same meta-pattern used by `review_patch.md`; only §3 onward is diagnostic-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: multiple subsystems (engine + live renderer + summary adap
 PyTorch coupling: none (engine consumes sampler-derived metric objects, not PyTorch internals)
 Reference reviews: none yet — `step_time` and `step_memory` engines are the only landed exemplars
 Companion author guide: `add_diagnostic.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow (applies to every TraceML PR)
@@ -33,7 +29,7 @@ This same seven-step shape applies to patch PRs (`review_patch.md`), sampler PRs
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 The first thing you do with a diagnostic PR is **not** open the engine diff. Open three things:
 
@@ -422,7 +418,7 @@ For a PR that adds a new kind:
 
 ```bash
 # Run a synthetic training script under the new build.
-git -C /teamspace/studios/this_studio/traceml checkout pr-NN
+git -C <repo> checkout pr-NN
 python /tmp/synthetic_idle_gpu.py  # designed to fire IDLE_GPU
 # Inspect:
 cat .traceml/<session>/final_summary.json | jq '.cards.step_time.diagnosis'

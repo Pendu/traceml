@@ -1,8 +1,7 @@
 # TraceML — PyTorch Q&A
 
-Personal Q&A log focused on PyTorch — fundamentals through internals — for understanding TraceML's instrumentation surface.
+A Q&A log on PyTorch — fundamentals through internals — covering the surface area TraceML's instrumentation depends on.
 
-**Started:** 2026-04-24
 **Companion file:** [learning-qa.md](learning-qa.md) — covers OS basics, networking, Python internals, CUDA, distributed training, TraceML architecture (Q1–Q15).
 **Walkthroughs:** [code-walkthroughs.md](code-walkthroughs.md) — file-by-file readings (W1+).
 
@@ -103,7 +102,7 @@ Sub-topics (more questions can be added to any of them):
 - [P48: What is _call_impl, and why does TraceML monkey-patch around it?](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)
 - [P49: What's the exact firing order of forward_pre_hook, forward_hook, backward_pre_hook, backward_hook?](#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook)
 - [P50: How does PyTorch's built-in profiler differ from TraceML's approach?](#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)
-- [P51: Which torch.cuda.* APIs does TraceML rely on, and how stable are they across PyTorch versions?](#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd)
+- [P51: Which torch.cuda.* APIs does TraceML rely on, and how stable are they across PyTorch versions?](#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions)
 - [P52: How does TraceML measure per-layer memory, and what's the relationship to torch.cuda.memory_allocated?](#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated)
 
 ---
@@ -2890,7 +2889,7 @@ def _traceml_forward_hook(module, args, output):
 
 Won't fix the underlying bypass, but prevents bogus data from entering the database during the compile pass itself.
 
-*Why this is the "PyTorch coupling" risk.* TraceML's value depends on hooks and patches firing reliably. Compile semantics — what Dynamo inlines vs treats opaquely, how `_call_impl` interacts with hook dispatch, what AOT autograd preserves through fake-tensor replay — change between PyTorch minor releases. PT 2.0/2.1/2.4 each shifted some defaults; PT 2.5+ added more public API around `torch.compiler.*`. The CLAUDE.md constraint "PyTorch coupling: All auto-instrumentation depends on PyTorch internals that can change every release. Test coverage is critical" is precisely about this. The realistic engineering posture:
+*Why this is the "PyTorch coupling" risk.* TraceML's value depends on hooks and patches firing reliably. Compile semantics — what Dynamo inlines vs treats opaquely, how `_call_impl` interacts with hook dispatch, what AOT autograd preserves through fake-tensor replay — change between PyTorch minor releases. PT 2.0/2.1/2.4 each shifted some defaults; PT 2.5+ added more public API around `torch.compiler.*`. The PyTorch-coupling constraint "PyTorch coupling: All auto-instrumentation depends on PyTorch internals that can change every release. Test coverage is critical" is precisely about this. The realistic engineering posture:
 
 - Pin a tested matrix of PyTorch versions in CI; run a synthetic compiled-model regression suite (forward hooks fire? backward hooks fire? layer-time table populated?).
 - On unsupported versions, emit a startup warning and fall back to coarser instrumentation.
@@ -3234,7 +3233,7 @@ Standard "live monitor + on-demand deep tool" split.
 
 ---
 
-### P51: Which `torch.cuda.*` APIs does TraceML rely on, and how stable are they across PyTorch versions (relevant to the "PyTorch coupling" constraint in CLAUDE.md)?
+### P51: Which `torch.cuda.*` APIs does TraceML rely on, and how stable are they across PyTorch versions?
 
 **Date:** 2026-04-24
 
@@ -3277,14 +3276,14 @@ That's the entire `torch.cuda.*` dependency surface. ~12 functions, all in the p
 **Medium-stability concerns.**
 - The **per-thread default stream** semantics ([Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) affect *what stream `event.record()` uses by default*. TraceML doesn't use `set_stream` explicitly, so it inherits whatever stream the user's code is running on — correct for measuring user work.
 
-**Low-stability concerns (the real coupling risk).** These are *not* `torch.cuda.*` but they're what CLAUDE.md's "PyTorch coupling" constraint warns about:
+**Low-stability concerns (the real coupling risk).** These are *not* `torch.cuda.*` but they're what TraceML's "PyTorch coupling" constraint warns about:
 
 - **`nn.Module.__call__` slot replacement** ([forward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/forward_auto_timer_patch.py)). PyTorch reserves the right to make `_call_impl` a C++ method or move dispatch into TorchScript. The day they do, `nn.Module.__call__ = my_func` either fails silently or breaks. **Highest-risk patch in the codebase.**
 - **`torch.Tensor.backward` / `torch.autograd.backward` replacement** ([backward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/backward_auto_timer_patch.py)). Same risk class.
 - **`register_full_backward_hook`** ([layer_backward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py)). Public API, but the contract for `grad_input` / `grad_output` shapes when the module's forward returns non-Tensor outputs has been quietly tightened across versions.
 - **`module._traceml_*` attribute attachment** on user models. Nothing in PyTorch promises `nn.Module` will tolerate arbitrary attributes; if PyTorch ever uses `__slots__` on Module (unlikely but possible), this breaks.
 
-*Why CLAUDE.md emphasizes test coverage.* "All auto-instrumentation depends on PyTorch internals that can change every release. Test coverage is critical." TraceML's CI should pin and test against multiple PyTorch versions (2.5, 2.6, latest nightly). Specifically, the smoke tests should verify:
+*Why TraceML emphasizes test coverage.* "All auto-instrumentation depends on PyTorch internals that can change every release. Test coverage is critical." TraceML's CI should pin and test against multiple PyTorch versions (2.5, 2.6, latest nightly). Specifically, the smoke tests should verify:
 
 1. `nn.Module.__call__` can still be reassigned at the class level and the new function is invoked when the user calls `model(x)`.
 2. `torch.Tensor.backward` reassignment still intercepts user `loss.backward()` calls.

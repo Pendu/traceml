@@ -1,8 +1,5 @@
 # How to review a renderer PR
 
-> Internal contributor guide. Audience: one trusted co-founder / new engineer
-> reviewing TraceML PRs. Companion to `add_renderer.md`. Not for public docs.
-
 This guide teaches you how to review a PR that adds or modifies a renderer in `src/traceml/renderers/`. It assumes you have already read `add_renderer.md` (the author's guide) and have a working mental model of [W9 (aggregator core)][W9] and [W10 (display drivers + renderers)][W10]. The seven-step meta-workflow is identical to the one in `review_patch.md`; only the consistency table (§3) and the failure-mode catalogue (§4) are renderer-specific.
 
 ---
@@ -12,7 +9,6 @@ Cross-cutting impact: aggregator process only (training side untouched)
 PyTorch coupling: none
 Reference exemplars: `StepCombinedRenderer` (full split), `StepMemoryRenderer` (full split with diagnostics), `StdoutStderrRenderer` (flat), `SystemRenderer` (split + dashboard)
 Companion author guide: `add_renderer.md`
-Last verified: 2026-04-25
 ---
 
 ## 1. The meta-review-workflow
@@ -31,7 +27,7 @@ The reviewer ends with a 2–3 sentence executive summary (§7.4) that the maint
 
 ---
 
-## 2. Step 1 — Anchor the PR to your walkthroughs
+## 2. Step 1 — Anchor the PR to the walkthroughs
 
 Don't open the diff first. Open [`traceml_learning_code_walkthroughs.md`][W10] and re-read W10 §"Renderer compute / schema / render split" and §"Display drivers compose renderers." The renderer family has documented invariants — read-only data source, dataclass payload to dashboard, `BaseRenderer.layout_section_name` as the registration key, stale-cache TTL discipline. Those need to be in cache before you read the diff.
 
@@ -360,7 +356,7 @@ Every concern in the review must come with a concrete reproduction recipe. Same 
 
 ```
 # Setup
-git -C /teamspace/studios/this_studio/traceml checkout pr-XXX
+git -C <repo> checkout pr-XXX
 traceml run examples/mnist.py --mode cli   # let it run for ~60 s, then Ctrl-C
 SESSION=$(ls -td logs/*/ | head -1)
 
