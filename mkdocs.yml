@@ -97,6 +97,27 @@ nav:
           - Integrations: developer_guide/subsystems/integrations.md
           - Utils: developer_guide/subsystems/utils.md
       - Contributing: developer_guide/contributing.md
+  - Contributor Guide:
+      - Overview: contributor_guide/index.md
+      - Foundations:
+          - Principles: contributor_guide/principles.md
+          - Pipeline walkthrough: contributor_guide/pipeline_walkthrough.md
+      - Adding features:
+          - Add a sampler: contributor_guide/add_sampler.md
+          - Add a renderer: contributor_guide/add_renderer.md
+          - Add a patch: contributor_guide/add_patch.md
+          - Add a diagnostic: contributor_guide/add_diagnostic.md
+          - Add a CLI option: contributor_guide/add_cli.md
+          - Add a SQLite projection: contributor_guide/add_sqlite_projection.md
+          - Add a framework integration: contributor_guide/add_integration.md
+          - Change the wire format: contributor_guide/change_wire_format.md
+      - Reviewing PRs:
+          - Review a patch: contributor_guide/review_patch.md
+          - Review a sampler: contributor_guide/review_sampler.md
+          - Review a renderer: contributor_guide/review_renderer.md
+          - Review a diagnostic: contributor_guide/review_diagnostic.md
+          - Review a CLI change: contributor_guide/review_cli.md
+          - Review a SQLite projection: contributor_guide/review_sqlite_projection.md
   - Deep Dive:
       - Overview: deep_dive/index.md
       - Why TraceML: deep_dive/why.md
