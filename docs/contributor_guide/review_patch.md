@@ -57,8 +57,8 @@ If a file in the diff doesn't fit the table, that's a flag — the PR is doing s
 
 The point: **after anchoring, you should have one substantive file to read deeply and 4–6 mechanical files to skim.** PR_87 §1 is the worked example of this collapse.
 
-[W3]: ../deep_dive/code-walkthroughs.md#w3-user-facing-api--decorators-instrumentation-wrappers
-[W4]: ../deep_dive/code-walkthroughs.md#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works
+[W3]: ../deep_dive/code-walkthroughs.md#w3-user-facing-api-decorators-instrumentation-wrappers
+[W4]: ../deep_dive/code-walkthroughs.md#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works
 
 ---
 

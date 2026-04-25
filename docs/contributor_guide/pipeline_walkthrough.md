@@ -54,7 +54,7 @@ Stations 1–4 live in the **training process** (one per rank). Stations 5–8 l
 
 ## Station 1 — `timed_region` creates a `TimeEvent`
 
-**File:** [`traceml/src/traceml/utils/timing.py`](../../src/traceml/utils/timing.py) · **Walkthrough:** [W4](../deep_dive/code-walkthroughs.md#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works).
+**File:** [`traceml/src/traceml/utils/timing.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) · **Walkthrough:** [W4](../deep_dive/code-walkthroughs.md#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works).
 
 The patched `.to()` runs inside `with timed_region("_traceml_internal:h2d_time", scope="step", use_gpu=True):`. The context manager records `cpu_start = time.time()`, allocates two CUDA events from the pool (`get_cuda_event()`), records `start_evt.record()` on the current stream, yields to the wrapped function, then in `finally` records `end_evt.record()`, captures `cpu_end`, and constructs a `TimeEvent` dataclass holding both CPU timestamps and pending CUDA events. The event is appended to the module-global `_STEP_BUFFER` deque.
 
@@ -69,7 +69,7 @@ The patched `.to()` runs inside `with timed_region("_traceml_internal:h2d_time",
 
 ## Station 2 — `trace_step` exits → flush to the queue
 
-**File:** [`traceml/src/traceml/utils/timing.py`](../../src/traceml/utils/timing.py) (`flush_step_time_buffer`) · **Walkthrough:** [W3](../deep_dive/code-walkthroughs.md#w3-user-facing-api--decorators-instrumentation-wrappers).
+**File:** [`traceml/src/traceml/utils/timing.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) (`flush_step_time_buffer`) · **Walkthrough:** [W3](../deep_dive/code-walkthroughs.md#w3-user-facing-api-decorators-instrumentation-wrappers).
 
 When the user exits the `with traceml.trace_step(model):` block, `flush_step_time_buffer(step)` runs. It drains the entire `_STEP_BUFFER` into a single `StepTimeBatch(step=N, events=[...])` and `put_nowait`s the batch onto `_STEP_TIME_QUEUE` — a `queue.Queue(maxsize=2048)` that's the cross-thread handoff primitive.
 
@@ -84,7 +84,7 @@ CUDA events in the batch are still pending. Training thread is already running s
 
 ## Station 3 — `StepTimeSampler.sample()` resolves and aggregates
 
-**File:** [`traceml/src/traceml/samplers/step_time_sampler.py`](../../src/traceml/samplers/step_time_sampler.py) · **Walkthrough:** [W6](../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows).
+**File:** [`traceml/src/traceml/samplers/step_time_sampler.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/step_time_sampler.py) · **Walkthrough:** [W6](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows).
 
 The sampler runs on a separate thread inside the training process — the runtime's background sampler loop, polling at `TRACEML_INTERVAL` (default 1.0 s). Each tick, `sample()` does three things:
 
@@ -100,7 +100,7 @@ The sampler runs on a separate thread inside the training process — the runtim
 
 ## Station 4 — `DBIncrementalSender` ships only new rows
 
-**File:** [`traceml/src/traceml/database/database_sender.py`](../../src/traceml/database/database_sender.py) · **Walkthrough:** [W7](../deep_dive/code-walkthroughs.md#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping).
+**File:** [`traceml/src/traceml/database/database_sender.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database_sender.py) · **Walkthrough:** [W7](../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping).
 
 The runtime's tick calls `sender.collect_payload()` after every sampler. The sender tracks a monotonic per-table append cursor (`_last_sent_seq`). It reads `db.get_append_count(table)`, computes the delta, slices the new rows, builds an envelope `{"rank": ..., "sampler": ..., "timestamp": ..., "tables": {...}}`, encodes via `msgspec.msgpack`, and ships through the TCP client.
 
@@ -116,7 +116,7 @@ The wire format is length-prefixed msgpack frames. Header is 4 bytes big-endian 
 
 ## Station 5 — `TCPServer` receives, routes to `RemoteDBStore`
 
-**File:** [`traceml/src/traceml/transport/tcp_transport.py`](../../src/traceml/transport/tcp_transport.py), [`traceml/src/traceml/database/remote_database_store.py`](../../src/traceml/database/remote_database_store.py) · **Walkthrough:** [W8](../deep_dive/code-walkthroughs.md#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes).
+**File:** [`traceml/src/traceml/transport/tcp_transport.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/transport/tcp_transport.py), [`traceml/src/traceml/database/remote_database_store.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/database/remote_database_store.py) · **Walkthrough:** [W8](../deep_dive/code-walkthroughs.md#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes).
 
 The aggregator's TCP server runs a single accept thread plus one recv thread per connected rank. Each frame is decoded via `msgspec.msgpack`. The envelope's `rank` and `sampler` route the inner `tables` payload into `RemoteDBStore`, which lazily creates a `Database(rank, sampler_name)` on first ingestion from each (rank, sampler) pair. `RemoteDBStore` is the in-memory rank-aware shadow of every sampler's local `Database`.
 
@@ -130,7 +130,7 @@ The aggregator's TCP server runs a single accept thread plus one recv thread per
 
 ## Station 6 — SQLite projection writer fans out the payload
 
-**File:** [`traceml/src/traceml/aggregator/sqlite_writers/`](../../src/traceml/aggregator/sqlite_writers/) · **Walkthrough:** [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes).
+**File:** [`traceml/src/traceml/aggregator/sqlite_writers/`](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/) · **Walkthrough:** [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes).
 
 For every received envelope, the aggregator's writer dispatcher routes to the per-sampler projection writer. Each writer (`system.py`, `process.py`, `step_time.py`, `step_memory.py`, `stdout_stderr.py`) defines an `init_schema(conn)` that runs at aggregator startup (`CREATE TABLE IF NOT EXISTS ...`, indexes) and a write method that consumes the wire payload row-by-row, projecting flat fields into columns and nested structures into child tables (FK-linked) or JSON blobs.
 
@@ -148,7 +148,7 @@ This is the bridge between sampler and renderer. If a sampler emits rows but no 
 
 ## Station 7 — Renderer reads SQLite, produces output
 
-**File:** [`traceml/src/traceml/renderers/`](../../src/traceml/renderers/) · **Walkthrough:** [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql).
+**File:** [`traceml/src/traceml/renderers/`](https://github.com/Pendu/traceml/blob/main/src/traceml/renderers/) · **Walkthrough:** [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 
 Each renderer is a `BaseRenderer` subclass with a `*Computer` that opens a short-lived SQLite connection per call, runs a bounded query (`SELECT ... ORDER BY id DESC LIMIT N`), groups in Python, builds a frozen dataclass result, and returns it. The renderer formats the result for its medium: `get_panel_renderable()` returns a Rich `Panel` for the CLI driver; `get_dashboard_renderable()` returns the dataclass directly for the NiceGUI driver to render.
 
@@ -162,7 +162,7 @@ Each renderer is a `BaseRenderer` subclass with a `*Computer` that opens a short
 
 ## Station 8 — Display driver flushes to the user
 
-**File:** [`traceml/src/traceml/aggregator/display_drivers/`](../../src/traceml/aggregator/display_drivers/) · **Walkthrough:** [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql).
+**File:** [`traceml/src/traceml/aggregator/display_drivers/`](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/) · **Walkthrough:** [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 
 The display driver runs a tick loop at `render_interval_sec` (default 2.0 s). Each tick, it iterates over its registered renderers, calls the appropriate method (`get_panel_renderable()` for CLI, `get_dashboard_renderable()` for NiceGUI), and updates the display. The CLI driver uses Rich `Live` for in-place terminal updates; the NiceGUI driver pushes typed payloads to per-client subscribers, which mutate Plotly figures in-place.
 
@@ -210,7 +210,7 @@ If you can answer these without re-reading, you have the mental model.
 
 ## Cross-references
 
-- **Deep walkthroughs:** [W6 (samplers)](../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows), [W7 (DB / sender)](../deep_dive/code-walkthroughs.md#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping), [W8 (transport)](../deep_dive/code-walkthroughs.md#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9 (aggregator core)](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes), [W10 (renderers / drivers)](../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql).
+- **Deep walkthroughs:** [W6 (samplers)](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows), [W7 (DB / sender)](../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8 (transport)](../deep_dive/code-walkthroughs.md#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9 (aggregator core)](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes), [W10 (renderers / drivers)](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 - **Concept Q&A:** [Q10 (TCP)](../deep_dive/learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q15 (CUDA streams)](../deep_dive/learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread).
 - **PyTorch internals:** [P48 (`_call_impl`)](../deep_dive/pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49 (hook firing order)](../deep_dive/pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P51 (`torch.cuda.*` API stability)](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd).
 - **The full pedagogical version:** [PR #87 Appendix D](../deep_dive/pr_reviews/pr-87-h2d-timing.md) — Stations 1–3 are written in detail there with checkpoint questions; Stations 4–8 above complete what that document defers.

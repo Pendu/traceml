@@ -1,6 +1,6 @@
 # TraceML Code Walkthroughs
 
-File-by-file readings of the TraceML codebase. **Companion file** to [traceml_learning_qa.md](traceml_learning_qa.md), which covers the conceptual Q&A on OS basics, networking, Python internals, CUDA, distributed training, and TraceML architecture.
+File-by-file readings of the TraceML codebase. **Companion file** to [learning-qa.md](learning-qa.md), which covers the conceptual Q&A on OS basics, networking, Python internals, CUDA, distributed training, and TraceML architecture.
 
 Walkthroughs assume the vocabulary from those Q&As — when a walkthrough cross-references e.g. `Q5 (OS fundamentals)`, the link jumps straight to the relevant Q&A entry.
 
@@ -60,13 +60,13 @@ The architecture diagram (`traceml/docs/assets/Architecture_excali_b.png`) shows
 
 The **physical view** below opens up each of those three boxes and overlays the actual files inside, grouped by subsystem and color-coded by role. Each box carries a `[W#]` tag pointing to the matching walkthrough. The interactive Excalidraw source is [here](https://excalidraw.com/#json=8O-QQPD_ybJwRAuSOpP1F,ORTOD0vk4o4Ak7WOF6W7aw) (zoom in to read the file lists).
 
-![TraceML physical view — files mapped onto the three-process architecture](Architecture_physical_view.png)
+![TraceML physical view — files mapped onto the three-process architecture](../assets/architecture_physical_view.png)
 
 Mapping each block to actual files:
 
 | Diagram block | Files | Walkthrough |
 |---|---|---|
-| **TraceOpt CLI** (subprocess spawner) | [cli.py](traceml/src/traceml/cli.py) | W1 ✅ |
+| **TraceOpt CLI** (subprocess spawner) | [cli.py](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py) | W1 ✅ |
 | **Per-rank runtime + queue + sender** | `runtime/` (executor, runtime, launch_context, session, settings) | W2 |
 | **User-facing instrumentation API** | `decorators.py`, `instrumentation.py`, `wrappers.py`, `initialization.py`, `api.py` | W3 |
 | **Patches + timing primitives** | `utils/patches/*`, `utils/timing.py`, `utils/cuda_event_pool.py`, `utils/step_memory.py` | W4 |
@@ -83,32 +83,32 @@ Total source: ~30k LOC across ~80 files. This table doubles as the roadmap for t
 
 ## Roadmap (W2 onward)
 
-The walkthroughs follow the data flow left-to-right, matching how the diagram reads (CLI → spawned ranks → telemetry capture → transport → aggregator → display → summary). Each entry uses the same format as W1 and cross-links back to relevant Q-entries (`traceml_learning_qa.md`) and P-entries (`traceml_pytorch_qa.md`).
+The walkthroughs follow the data flow left-to-right, matching how the diagram reads (CLI → spawned ranks → telemetry capture → transport → aggregator → display → summary). Each entry uses the same format as W1 and cross-links back to relevant Q-entries (`learning-qa.md`) and P-entries (`pytorch-qa.md`).
 
 Three "must-do" walkthroughs that give 80% of the architecture: **W2** (closes the loop with W1 — what `torchrun` actually spawned), **W4** (the monkey-patching machinery — demystifies zero-code instrumentation), **W9** (the other side of the TCP wire). W11 (summaries + diagnostics) is the largest, most self-contained, and most "feature work" — fine to defer.
 
 ## Table of Contents
 
-- [W1: cli.py — top-level launcher and process orchestrator](#w1-clipy--top-level-launcher-and-process-orchestrator)
-- [W2: Per-rank runtime — executor, runtime loop, launch context, session](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session)
-- [W3: User-facing API — decorators, instrumentation, wrappers](#w3-user-facing-api--decorators-instrumentation-wrappers)
-- [W4: Patches + timing primitives — how zero-code instrumentation actually works](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)
-- [W5: Per-layer hooks — forward/backward time and memory hooks](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks)
-- [W6: Samplers + schemas — turning hook events into structured rows](#w6-samplers--schemas--turning-hook-events-into-structured-rows)
-- [W7: Database + sender — bounded in-memory store and incremental TCP shipping](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)
-- [W8: Transport — TCP server/client, msgpack framing, DDP rank detection](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)
-- [W9: Aggregator core — TCP receive, frame dispatch, SQLite writes](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)
-- [W10: Display drivers + renderers — terminal and web UI from SQL](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql)
-- [W11: Summaries + diagnostics — end-of-run analysis](#w11-summaries--diagnostics--end-of-run-analysis)
-- [W12: Framework integrations — HuggingFace Trainer and PyTorch Lightning adapters](#w12-framework-integrations--huggingface-trainer-and-pytorch-lightning-adapters)
+- [W1: cli.py — top-level launcher and process orchestrator](#w1-clipy-top-level-launcher-and-process-orchestrator)
+- [W2: Per-rank runtime — executor, runtime loop, launch context, session](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session)
+- [W3: User-facing API — decorators, instrumentation, wrappers](#w3-user-facing-api-decorators-instrumentation-wrappers)
+- [W4: Patches + timing primitives — how zero-code instrumentation actually works](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)
+- [W5: Per-layer hooks — forward/backward time and memory hooks](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks)
+- [W6: Samplers + schemas — turning hook events into structured rows](#w6-samplers-schemas-turning-hook-events-into-structured-rows)
+- [W7: Database + sender — bounded in-memory store and incremental TCP shipping](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)
+- [W8: Transport — TCP server/client, msgpack framing, DDP rank detection](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)
+- [W9: Aggregator core — TCP receive, frame dispatch, SQLite writes](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)
+- [W10: Display drivers + renderers — terminal and web UI from SQL](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql)
+- [W11: Summaries + diagnostics — end-of-run analysis](#w11-summaries-diagnostics-end-of-run-analysis)
+- [W12: Framework integrations — HuggingFace Trainer and PyTorch Lightning adapters](#w12-framework-integrations-huggingface-trainer-and-pytorch-lightning-adapters)
 
 ---
 
 ## W1: cli.py — top-level launcher and process orchestrator
 
 **Date:** 2026-04-24
-**File:** [traceml/src/traceml/cli.py](traceml/src/traceml/cli.py) (881 lines)
-**Reads cleanly with:** [Q1](traceml_learning_qa.md#q1-what-is-a-subprocess), [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets), [Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods), [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)
+**File:** [traceml/src/traceml/cli.py](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py) (881 lines)
+**Reads cleanly with:** [Q1](learning-qa.md#q1-what-is-a-subprocess), [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets), [Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods), [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)
 **Origin:** suggested follow-up in the Q&A flow once Q1–Q12 were in place — the CLI is the cleanest place to see every concept land in real code.
 
 ### Short answer
@@ -127,7 +127,7 @@ The actual work — telemetry collection, rendering, training — happens in the
 
 #### File-level shape (lines 1–23)
 
-Imports include `subprocess` (process spawning, [Q1](traceml_learning_qa.md#q1-what-is-a-subprocess)), `signal` (Unix signal handling, [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets)), `socket` (TCP readiness probe, [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)), `struct` (binary frame headers in the inspect command, Q5 framing), `msgspec` (decoding inspect frames).
+Imports include `subprocess` (process spawning, [Q1](learning-qa.md#q1-what-is-a-subprocess)), `signal` (Unix signal handling, [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets)), `socket` (TCP readiness probe, [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)), `struct` (binary frame headers in the inspect command, Q5 framing), `msgspec` (decoding inspect frames).
 
 Three constants up top:
 
@@ -138,7 +138,7 @@ Three constants up top:
 #### Tiny utilities (lines 26–104)
 
 - `_utc_now_iso()` — wall-clock timestamp for manifests. Always UTC to avoid timezone bugs across nodes.
-- `_write_json_atomic(path, payload)` — **critical pattern for long-running services** ([Q3](traceml_learning_qa.md#q3-what-does-long-running-mean)): write to a temp file in the same directory, fsync to disk, then `os.replace` to swap atomically. Why: if you `open(path, 'w')` and crash mid-write, the manifest is half-written and unreadable. With this pattern you always have either the old version or the new version, never a corrupt one. `os.replace` is atomic on POSIX as long as src and dst are on the same filesystem (hence "same directory" temp).
+- `_write_json_atomic(path, payload)` — **critical pattern for long-running services** ([Q3](learning-qa.md#q3-what-does-long-running-mean)): write to a temp file in the same directory, fsync to disk, then `os.replace` to swap atomically. Why: if you `open(path, 'w')` and crash mid-write, the manifest is half-written and unreadable. With this pattern you always have either the old version or the new version, never a corrupt one. `os.replace` is atomic on POSIX as long as src and dst are on the same filesystem (hence "same directory" temp).
 - `_load_json_or_warn(path)` — defensive read: missing file → empty dict; corrupt file → preserved as `.corrupt` and returns empty dict. Long-running services must tolerate self-inflicted bad state from previous crashes.
 - `_resolve_existing_script_path` — validates the user-supplied script path exists. Resolves to absolute so child processes see a stable path even if cwd shifts.
 
@@ -159,7 +159,7 @@ Three constants up top:
 
 #### Code manifest (lines 155–189)
 
-`write_code_manifest` runs static AST analysis on the user's training script and saves a JSON manifest. Wrapped in a broad try/except — if AST analysis fails, write a minimal fallback manifest. **The CLI flow must never break** because of analysis bugs: telemetry is always supposed to be additive (the fail-open principle, [Q8](traceml_learning_qa.md#q8-why-traceml-uses-subprocesses-expanded)).
+`write_code_manifest` runs static AST analysis on the user's training script and saves a JSON manifest. Wrapped in a broad try/except — if AST analysis fails, write a minimal fallback manifest. **The CLI flow must never break** because of analysis bugs: telemetry is always supposed to be additive (the fail-open principle, [Q8](learning-qa.md#q8-why-traceml-uses-subprocesses-expanded)).
 
 #### Run manifest (lines 192–285)
 
@@ -210,11 +210,11 @@ Both use:
 
 - `start_new_session=True` — child becomes its own session leader, with its own process group ID = its own PID. This is what makes `os.killpg(pid, sig)` work later.
 - Explicit `cwd` — child's working directory is set explicitly, so it doesn't depend on whatever shell-relative state the parent has.
-- Inherited stdin/stdout/stderr (default behavior) — the child's prints and tracebacks show up in the user's terminal directly (stdio inheritance from [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets)).
+- Inherited stdin/stdout/stderr (default behavior) — the child's prints and tracebacks show up in the user's terminal directly (stdio inheritance from [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets)).
 
 #### The orchestrator: `launch_process` (lines 439–634)
 
-**Step 1 — env setup (452–476).** Copy the parent's env, then layer TraceML config on top: `TRACEML_DISABLED`, `TRACEML_PROFILE`, `TRACEML_SCRIPT_PATH`, `TRACEML_TCP_HOST`, `TRACEML_TCP_PORT`, etc. Also captures a `LaunchContext` (the launching cwd) and merges it in. **This is how config crosses the fork+exec boundary**: env vars survive exec ([Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods)), so children read them after starting fresh with no shared memory.
+**Step 1 — env setup (452–476).** Copy the parent's env, then layer TraceML config on top: `TRACEML_DISABLED`, `TRACEML_PROFILE`, `TRACEML_SCRIPT_PATH`, `TRACEML_TCP_HOST`, `TRACEML_TCP_PORT`, etc. Also captures a `LaunchContext` (the launching cwd) and merges it in. **This is how config crosses the fork+exec boundary**: env vars survive exec ([Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods)), so children read them after starting fresh with no shared memory.
 
 **Step 2 — paths and manifests (478–508).** Resolves session root (`logs_dir/session_id`), creates the aggregator dir and DB path, writes the code manifest, writes the initial run manifest with `status="starting"`.
 
@@ -222,7 +222,7 @@ Both use:
 
 **Step 4 — validate UI mode (535–540).** Defensive check; should already be caught by argparse `choices=`, but belt-and-suspenders.
 
-**Step 5 — build the train_cmd (542–547).** Note this isn't `python train.py` — it's `python -m torch.distributed.run ... runtime/executor.py -- <user-script-args>`. The runtime executor is what actually runs the user's script *with TraceML's runtime monkey-patches in place* ([Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)). The `--` separates executor args from user-script args.
+**Step 5 — build the train_cmd (542–547).** Note this isn't `python train.py` — it's `python -m torch.distributed.run ... runtime/executor.py -- <user-script-args>`. The runtime executor is what actually runs the user's script *with TraceML's runtime monkey-patches in place* ([Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)). The `--` separates executor args from user-script args.
 
 **Step 6 — pre-allocate Popen variables and install handlers (549–554).** `agg_proc` and `train_proc` start as `None`. The handler's lambda captures them by name (not value), so the handler sees current values whenever it fires.
 
@@ -239,14 +239,14 @@ Both use:
 #### Top-level dispatch (lines 637–704)
 
 - `run_with_tracing(args, profile)` — entry for `traceml watch|run|deep`. Sets `args.profile`, validates the script path, calls `launch_process`.
-- `run_inspect(args)` — debug command that decodes binary msgpack log files. Reads 4-byte length prefix (`struct.unpack("!I", header)`), reads payload, decodes — exactly the framing format from [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets). Useful for debugging telemetry pipeline issues offline.
+- `run_inspect(args)` — debug command that decodes binary msgpack log files. Reads 4-byte length prefix (`struct.unpack("!I", header)`), reads payload, decodes — exactly the framing format from [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets). Useful for debugging telemetry pipeline issues offline.
 - `run_compare(args)` — calls into a separate `traceml.compare.command` module to diff two summary JSONs.
 
 #### CLI parser (lines 707–854)
 
 Standard `argparse` setup with subcommands `watch`, `run`, `deep`, `compare`, `inspect`. Most args are shared via `_add_launch_args`. Notable defaults:
 
-- `--tcp-host=127.0.0.1` (localhost, [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port))
+- `--tcp-host=127.0.0.1` (localhost, [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port))
 - `--tcp-port=29765` (high-numbered ephemeral-ish range, chosen to avoid common conflicts)
 - `--mode=cli` (Rich terminal UI by default)
 - `--nproc-per-node=1` (single-GPU by default; user bumps to 4/8 for multi-GPU)
@@ -258,13 +258,13 @@ Standard `argparse` setup with subcommands `watch`, `run`, `deep`, `compare`, `i
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q1](traceml_learning_qa.md#q1-what-is-a-subprocess) (subprocess)** → `start_aggregator_process` and `start_training_process` are the literal `subprocess.Popen` calls referenced in Q1.
-- **[Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) (OS)** → signals (`signal.SIGINT/SIGTERM/SIGKILL`), process groups (`start_new_session=True`, `os.killpg`), TCP probe (`socket.create_connection`).
-- **[Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods) (spawning)** → fork+exec happens twice: once for aggregator (fresh Python), once for torchrun (which itself fork+execs N more workers).
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → not in cli.py directly, but lives in the spawned process via `runtime/executor.py` which the train_cmd references.
-- **[Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → `tcp_host`, `tcp_port`, the readiness probe, `socket.create_connection`.
-- **[Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → The aggregator is spawned *before* any CUDA work, and torchrun fork+execs fresh interpreters per rank, so there's no CUDA-fork hazard anywhere in this file.
-- **[Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) (NCCL)** → not in cli.py directly, but `torch.distributed.run` (torchrun) sets up the env vars NCCL needs (`MASTER_ADDR`, `MASTER_PORT`, `RANK`, `WORLD_SIZE`).
+- **[Q1](learning-qa.md#q1-what-is-a-subprocess) (subprocess)** → `start_aggregator_process` and `start_training_process` are the literal `subprocess.Popen` calls referenced in Q1.
+- **[Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) (OS)** → signals (`signal.SIGINT/SIGTERM/SIGKILL`), process groups (`start_new_session=True`, `os.killpg`), TCP probe (`socket.create_connection`).
+- **[Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods) (spawning)** → fork+exec happens twice: once for aggregator (fresh Python), once for torchrun (which itself fork+execs N more workers).
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → not in cli.py directly, but lives in the spawned process via `runtime/executor.py` which the train_cmd references.
+- **[Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → `tcp_host`, `tcp_port`, the readiness probe, `socket.create_connection`.
+- **[Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → The aggregator is spawned *before* any CUDA work, and torchrun fork+execs fresh interpreters per rank, so there's no CUDA-fork hazard anywhere in this file.
+- **[Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) (NCCL)** → not in cli.py directly, but `torch.distributed.run` (torchrun) sets up the env vars NCCL needs (`MASTER_ADDR`, `MASTER_PORT`, `RANK`, `WORLD_SIZE`).
 
 ### Concepts introduced
 
@@ -277,15 +277,15 @@ Orchestration vs work, atomic file replace (`os.replace` on same filesystem), fa
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/runtime/executor.py](traceml/src/traceml/runtime/executor.py) (471 lines)
-- [traceml/src/traceml/runtime/runtime.py](traceml/src/traceml/runtime/runtime.py) (299 lines)
-- [traceml/src/traceml/runtime/launch_context.py](traceml/src/traceml/runtime/launch_context.py) (104 lines)
-- [traceml/src/traceml/runtime/session.py](traceml/src/traceml/runtime/session.py) (13 lines)
-- [traceml/src/traceml/runtime/settings.py](traceml/src/traceml/runtime/settings.py) (48 lines)
-- [traceml/src/traceml/runtime/config.py](traceml/src/traceml/runtime/config.py) (10 lines)
-- [traceml/src/traceml/runtime/stdout_stderr_capture.py](traceml/src/traceml/runtime/stdout_stderr_capture.py) (50 lines)
+- [traceml/src/traceml/runtime/executor.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/executor.py) (471 lines)
+- [traceml/src/traceml/runtime/runtime.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/runtime.py) (299 lines)
+- [traceml/src/traceml/runtime/launch_context.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/launch_context.py) (104 lines)
+- [traceml/src/traceml/runtime/session.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/session.py) (13 lines)
+- [traceml/src/traceml/runtime/settings.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/settings.py) (48 lines)
+- [traceml/src/traceml/runtime/config.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/config.py) (10 lines)
+- [traceml/src/traceml/runtime/stdout_stderr_capture.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/stdout_stderr_capture.py) (50 lines)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [Q1](traceml_learning_qa.md#q1-what-is-a-subprocess), [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets), [Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods), [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [Q1](learning-qa.md#q1-what-is-a-subprocess), [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets), [Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods), [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)
 
 **Origin:** the natural follow-up to W1 — once the CLI fork+execs `python -m torch.distributed.run runtime/executor.py -- <user-args>`, what happens inside the spawned worker? This walkthrough closes that loop.
 
@@ -304,7 +304,7 @@ Same idea as W1's split between cli.py and the children, but one level deeper: c
 
 #### executor.py — the per-rank entry point (lines 1–471)
 
-This is the file `torchrun` actually invokes. It runs **once per rank**, in the rank's own freshly exec'd Python interpreter ([Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods)).
+This is the file `torchrun` actually invokes. It runs **once per rank**, in the rank's own freshly exec'd Python interpreter ([Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods)).
 
 ##### Env-var driven config (lines 194–246)
 
@@ -378,7 +378,7 @@ A few things happen in order, and the order matters:
 
    > Even for WORLD_SIZE=1, telemetry is sent over loopback TCP to keep the same code-path and allow future remote aggregators without refactoring.
 
-   The choice trades a small amount of overhead (kernel TCP stack on loopback, [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)) for a single uniform code path. No special-case "if rank 0, write to memory; else send TCP" branching anywhere.
+   The choice trades a small amount of overhead (kernel TCP stack on loopback, [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)) for a single uniform code path. No special-case "if rank 0, write to memory; else send TCP" branching anywhere.
 
 6. **Sampler thread object** (114–118) — created but **not started** in `__init__`. Started later in `start()`. Why split? Because `__init__` runs during `start_runtime()` from executor, and we want the option to fall back to `NoOpRuntime` if construction fails *without* leaking a half-started thread.
 
@@ -416,9 +416,9 @@ Two phases per tick:
 
 **Phase 2 — batch TCP send (208–227).** Walk samplers, collect ready payloads via `sender.collect_payload()` (returns `None` if there's nothing new or if GPU events haven't resolved yet — see W4 on CUDA event timing). Then **one** `TCPClient.send_batch(batch)` call instead of N independent `send()` calls.
 
-The batching matters. The docstring (lines 182–190) is explicit: "N syscalls per tick" → "1 syscall." Each `socket.send` is at minimum a `write` syscall — a context switch into the kernel ([Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets)). For `deep` profile with 8 samplers ticking at 1Hz, that's 8 vs 1 syscall per second. Negligible at low cadence; matters more if interval is dropped to 100ms or if a future profile has more samplers.
+The batching matters. The docstring (lines 182–190) is explicit: "N syscalls per tick" → "1 syscall." Each `socket.send` is at minimum a `write` syscall — a context switch into the kernel ([Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets)). For `deep` profile with 8 samplers ticking at 1Hz, that's 8 vs 1 syscall per second. Negligible at low cadence; matters more if interval is dropped to 100ms or if a future profile has more samplers.
 
-Samplers whose GPU events haven't resolved skip this tick by returning `None`. They get picked up next tick. This is essential for layer time samplers ([P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd)) where `cudaEventQuery` may say "not yet" — detail in W4.
+Samplers whose GPU events haven't resolved skip this tick by returning `None`. They get picked up next tick. This is essential for layer time samplers ([P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd)) where `cudaEventQuery` may say "not yet" — detail in W4.
 
 ##### `_sampler_loop` (lines 229–236)
 
@@ -518,13 +518,13 @@ In dashboard mode this whole machinery is bypassed (`if self.mode == "cli":` gua
 
 ### How this file maps to earlier Q&A concepts
 
-- **[W1](#w1-clipy--top-level-launcher-and-process-orchestrator) (CLI launcher)** → the executor is exactly what W1's `train_cmd` invokes through torchrun. This walkthrough is the answer to "what runs inside the spawned worker."
-- **[Q1](traceml_learning_qa.md#q1-what-is-a-subprocess) (subprocess)** → the executor is itself a subprocess (spawned by torchrun, which was spawned by the CLI). It does **not** spawn further subprocesses; everything happens in-process.
-- **[Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) (OS basics)** → `threading.Event`, daemon threads, file descriptor inheritance for stdout/stderr capture, syscall reduction via batched TCP send.
-- **[Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods) (fork/exec)** → env vars are the only config that survives torchrun's `execve`. `LaunchContext` serializes the user's cwd into `TRACEML_LAUNCH_CWD` so it crosses the boundary.
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (in-process hook injection)** → `runpy.run_path` is the chosen mechanism. Because it runs in the executor's interpreter, monkey-patches installed by `TraceMLRuntime.start()` apply to the user's `model(x)` call. This is the entire reason the executor exists rather than just `subprocess.Popen([python, train.py])`.
-- **[Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → every rank, including rank 0, ships telemetry over loopback TCP to keep the code path uniform. The 1-syscall batched send is the throughput optimization.
-- **[Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → torchrun fork+execs each worker with a fresh interpreter, so each rank initializes its own CUDA context cleanly. The executor inherits a clean process; no fork hazard inside this scope.
+- **[W1](#w1-clipy-top-level-launcher-and-process-orchestrator) (CLI launcher)** → the executor is exactly what W1's `train_cmd` invokes through torchrun. This walkthrough is the answer to "what runs inside the spawned worker."
+- **[Q1](learning-qa.md#q1-what-is-a-subprocess) (subprocess)** → the executor is itself a subprocess (spawned by torchrun, which was spawned by the CLI). It does **not** spawn further subprocesses; everything happens in-process.
+- **[Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) (OS basics)** → `threading.Event`, daemon threads, file descriptor inheritance for stdout/stderr capture, syscall reduction via batched TCP send.
+- **[Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods) (fork/exec)** → env vars are the only config that survives torchrun's `execve`. `LaunchContext` serializes the user's cwd into `TRACEML_LAUNCH_CWD` so it crosses the boundary.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (in-process hook injection)** → `runpy.run_path` is the chosen mechanism. Because it runs in the executor's interpreter, monkey-patches installed by `TraceMLRuntime.start()` apply to the user's `model(x)` call. This is the entire reason the executor exists rather than just `subprocess.Popen([python, train.py])`.
+- **[Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → every rank, including rank 0, ships telemetry over loopback TCP to keep the code path uniform. The 1-syscall batched send is the throughput optimization.
+- **[Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → torchrun fork+execs each worker with a fresh interpreter, so each rank initializes its own CUDA context cleanly. The executor inherits a clean process; no fork hazard inside this scope.
 
 ### Concepts introduced
 
@@ -536,14 +536,14 @@ In dashboard mode this whole machinery is bypassed (`if self.mode == "cli":` gua
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/__init__.py](traceml/src/traceml/__init__.py) (22 lines)
-- [traceml/src/traceml/api.py](traceml/src/traceml/api.py) (179 lines)
-- [traceml/src/traceml/initialization.py](traceml/src/traceml/initialization.py) (354 lines)
-- [traceml/src/traceml/instrumentation.py](traceml/src/traceml/instrumentation.py) (288 lines)
-- [traceml/src/traceml/wrappers.py](traceml/src/traceml/wrappers.py) (294 lines)
-- [traceml/src/traceml/decorators.py](traceml/src/traceml/decorators.py) (36 lines)
+- [traceml/src/traceml/__init__.py](https://github.com/Pendu/traceml/blob/main/src/traceml/__init__.py) (22 lines)
+- [traceml/src/traceml/api.py](https://github.com/Pendu/traceml/blob/main/src/traceml/api.py) (179 lines)
+- [traceml/src/traceml/initialization.py](https://github.com/Pendu/traceml/blob/main/src/traceml/initialization.py) (354 lines)
+- [traceml/src/traceml/instrumentation.py](https://github.com/Pendu/traceml/blob/main/src/traceml/instrumentation.py) (288 lines)
+- [traceml/src/traceml/wrappers.py](https://github.com/Pendu/traceml/blob/main/src/traceml/wrappers.py) (294 lines)
+- [traceml/src/traceml/decorators.py](https://github.com/Pendu/traceml/blob/main/src/traceml/decorators.py) (36 lines)
 
-**Reads cleanly with:** [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P9](traceml_pytorch_qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip), [P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules), [P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session)
+**Reads cleanly with:** [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P9](pytorch-qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip), [P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules), [P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session)
 
 **Origin:** This is the contact surface — the only TraceML code a user actually types into their training script. W1 covered how the CLI launched the process; W2 covered what the runtime did inside the spawned rank. This walkthrough maps every entry point a user can touch (`import traceml`, `trace_step`, `wrap_optimizer`, `trace_time`) to the patches/hooks it triggers and explains how the "zero-code" claim is actually realized.
 
@@ -663,7 +663,7 @@ A few things deserve unpacking:
 - **`flush_step_events(model, TraceState.step)`** (line 165) is what makes per-layer event attribution work. The layer hooks (W5) buffer events into per-module deques during the step; `flush_step_events` drains those deques into samplers tagged with the now-incremented step number. Without this, you'd see layer events but they wouldn't know which step they belong to — the hook fires before the optimizer increments the step counter.
 - **`step_completed` flag** (lines 139, 154, 156) — only advance the step counter if the user's `yield`-ed body returned without raising. If their forward pass crashed, we still want `mem_tracker.record()` and `flush_step_events` to capture diagnostic state for the *failed* step, but we don't want to advance into the next step.
 
-The choice of "context manager that takes the model" is deliberate. It looks like overkill — why not `with trace_step():`? — but the model is needed for both the per-step memory tracker (`StepMemoryTracker(model)` walks parameters to compute per-layer memory deltas) and `flush_step_events(model, step)` (which iterates `model.modules()` to drain hook buffers). Decoupling step-boundary timing from model-bound state was apparently considered and rejected; it would have required a side-channel registry. See [P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules) for why iterating `model.modules()` is the obvious primitive here.
+The choice of "context manager that takes the model" is deliberate. It looks like overkill — why not `with trace_step():`? — but the model is needed for both the per-step memory tracker (`StepMemoryTracker(model)` walks parameters to compute per-layer memory deltas) and `flush_step_events(model, step)` (which iterates `model.modules()` to drain hook buffers). Decoupling step-boundary timing from model-bound state was apparently considered and rejected; it would have required a side-channel registry. See [P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules) for why iterating `model.modules()` is the obvious primitive here.
 
 ##### `trace_model_instance(model, ...)` — manual hook attachment (lines 170–242)
 
@@ -676,7 +676,7 @@ Used by HF Trainer / Lightning integrations (W12) and by `traceml deep` mode. Si
 - `trace_execution` → `attach_execution_entry_hooks`
 - `sample_layer_memory` → static `collect_layer_parameter_memory` (one-shot, not a hook)
 
-The `include_names` / `exclude_names` / `leaf_only` parameters are forwarded to each hook attacher and stored on the model as `_traceml_*` attributes (lines 197–199) so subsequent passes (e.g., recursive sub-modules) can read them. **`leaf_only=True` is the sane default** — attaching forward hooks to every container (`nn.Sequential`, `nn.ModuleList`) doubles or triples event volume because parent modules see every child's forward through their own `_call_impl` chain. See [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) and [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook).
+The `include_names` / `exclude_names` / `leaf_only` parameters are forwarded to each hook attacher and stored on the model as `_traceml_*` attributes (lines 197–199) so subsequent passes (e.g., recursive sub-modules) can read them. **`leaf_only=True` is the sane default** — attaching forward hooks to every container (`nn.Sequential`, `nn.ModuleList`) doubles or triples event volume because parent modules see every child's forward through their own `_call_impl` chain. See [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) and [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook).
 
 The early return on line 189–190 — `if _traceml_disabled() or _traceml_profile() != "deep"` — is the gate for "only attach per-layer hooks in `traceml deep` mode." Forward/backward time at the layer granularity is the most expensive instrumentation TraceML offers (one CUDA event per layer per step); cheap modes skip it.
 
@@ -731,7 +731,7 @@ optimizer.step = _wrapped_step
 
 The reason: `optimizer.step` is called by `torch.cuda.amp.GradScaler.step(optimizer)` and other tools that introspect the optimizer object and call `.step()` directly. A proxy class would break `isinstance(optimizer, torch.optim.Adam)` checks. **Object identity must be preserved.** The trade-off: idempotency requires the `_traceml_*_instance_wrapped` flag to be checked explicitly (lines 202, 263), and the original methods are stashed on `_traceml_original_*` for potential unwrap.
 
-This is the same identity-preservation rationale that drives the global forward patch (`nn.Module.__call__` patched in place rather than wrapping the class) — see [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks).
+This is the same identity-preservation rationale that drives the global forward patch (`nn.Module.__call__` patched in place rather than wrapping the class) — see [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks).
 
 The error handling on lines 222–227 and 279–284 is unusually strict — if reassignment fails, raise `RuntimeError` with "fatal" in the message. Why fatal here when everywhere else is fail-open? Because a half-wrapped optimizer is worse than an un-wrapped one: the user *thinks* they have timing data, gets some events, and silently misses gradient steps. Failing loudly forces them to fix the environment.
 
@@ -757,13 +757,13 @@ The single piece of state that disambiguates them is `_INIT_CONFIG.mode`. `instr
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/monkey-patching)** → `init()` in `initialization.py` is the literal entry point that injects in-process patches into `torch.nn.Module`, `torch.utils.data.DataLoader`, and `torch.optim.Optimizer`. This is "the thing W1 said happens in the spawned process."
-- **[P9](traceml_pytorch_qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip) (state_dict)** → `wrap_forward` sets `_traceml_forward_instance_wrapped` and `_traceml_original_forward` as plain attributes (lines 220–221). They're not registered parameters or buffers, so `state_dict()` ignores them — checkpoints stay clean. This is why side-channel registry is unnecessary.
-- **[P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules) (named_modules)** → `trace_model_instance` and the layer-hook attachers iterate `model.named_modules()` filtered by `leaf_only` and `include_names`/`exclude_names`. The `leaf_only=True` default avoids the parent-module double-counting trap.
-- **[P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → `_WrappedBackwardHandle.backward` (line 149) is the manual interception point for the same backward path that the global `backward_auto_timer_patch` instruments automatically.
-- **[P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl`)** → `wrap_forward` mutates `model.forward` in place rather than subclassing, for the same identity-preservation reason TraceML patches `nn.Module.__call__` instead of subclassing.
-- **[P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → `trace_model_instance` attaches forward/backward time and memory hooks; their firing order around a step's forward and backward passes determines event sequencing in samplers.
-- **[W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session) (runtime executor)** → the runtime is what calls `traceml.init(mode='auto')` programmatically before running the user's script. That call is the bridge from the spawned-process side to the user-API side covered here.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/monkey-patching)** → `init()` in `initialization.py` is the literal entry point that injects in-process patches into `torch.nn.Module`, `torch.utils.data.DataLoader`, and `torch.optim.Optimizer`. This is "the thing W1 said happens in the spawned process."
+- **[P9](pytorch-qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip) (state_dict)** → `wrap_forward` sets `_traceml_forward_instance_wrapped` and `_traceml_original_forward` as plain attributes (lines 220–221). They're not registered parameters or buffers, so `state_dict()` ignores them — checkpoints stay clean. This is why side-channel registry is unnecessary.
+- **[P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules) (named_modules)** → `trace_model_instance` and the layer-hook attachers iterate `model.named_modules()` filtered by `leaf_only` and `include_names`/`exclude_names`. The `leaf_only=True` default avoids the parent-module double-counting trap.
+- **[P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → `_WrappedBackwardHandle.backward` (line 149) is the manual interception point for the same backward path that the global `backward_auto_timer_patch` instruments automatically.
+- **[P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl`)** → `wrap_forward` mutates `model.forward` in place rather than subclassing, for the same identity-preservation reason TraceML patches `nn.Module.__call__` instead of subclassing.
+- **[P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → `trace_model_instance` attaches forward/backward time and memory hooks; their firing order around a step's forward and backward passes determines event sequencing in samplers.
+- **[W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session) (runtime executor)** → the runtime is what calls `traceml.init(mode='auto')` programmatically before running the user's script. That call is the bridge from the spawned-process side to the user-API side covered here.
 
 ### Concepts introduced
 
@@ -775,18 +775,18 @@ Patch policy state machine (`auto` / `manual` / `selective`), frozen process-loc
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/utils/patches/forward_auto_timer_patch.py](traceml/src/traceml/utils/patches/forward_auto_timer_patch.py) (63 lines)
-- [traceml/src/traceml/utils/patches/backward_auto_timer_patch.py](traceml/src/traceml/utils/patches/backward_auto_timer_patch.py) (88 lines)
-- [traceml/src/traceml/utils/patches/dataloader_patch.py](traceml/src/traceml/utils/patches/dataloader_patch.py) (34 lines)
-- [traceml/src/traceml/utils/timing.py](traceml/src/traceml/utils/timing.py) (256 lines)
-- [traceml/src/traceml/utils/cuda_event_pool.py](traceml/src/traceml/utils/cuda_event_pool.py) (71 lines)
-- [traceml/src/traceml/utils/step_memory.py](traceml/src/traceml/utils/step_memory.py) (105 lines)
-- [traceml/src/traceml/utils/entry_hook.py](traceml/src/traceml/utils/entry_hook.py) (50 lines)
-- [traceml/src/traceml/utils/flush_buffers.py](traceml/src/traceml/utils/flush_buffers.py) (37 lines)
+- [traceml/src/traceml/utils/patches/forward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/forward_auto_timer_patch.py) (63 lines)
+- [traceml/src/traceml/utils/patches/backward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/backward_auto_timer_patch.py) (88 lines)
+- [traceml/src/traceml/utils/patches/dataloader_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/dataloader_patch.py) (34 lines)
+- [traceml/src/traceml/utils/timing.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) (256 lines)
+- [traceml/src/traceml/utils/cuda_event_pool.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/cuda_event_pool.py) (71 lines)
+- [traceml/src/traceml/utils/step_memory.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/step_memory.py) (105 lines)
+- [traceml/src/traceml/utils/entry_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/entry_hook.py) (50 lines)
+- [traceml/src/traceml/utils/flush_buffers.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/flush_buffers.py) (37 lines)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W3](#w3-user-facing-api--decorators-instrumentation-wrappers), [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread), [P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P25](traceml_pytorch_qa.md#p25-how-does-num_workers--0-actually-work--threads-processes-ipc), [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W3](#w3-user-facing-api-decorators-instrumentation-wrappers), [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread), [P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P25](pytorch-qa.md#p25-how-does-num_workers-0-actually-work-threads-processes-ipc), [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd)
 
-**Origin:** the natural follow-on to [W3](#w3-user-facing-api--decorators-instrumentation-wrappers) — once `trace_step` and `trace_model_instance` are demystified, the next question is "but how does `import traceml; traceml run train.py` actually time the forward pass without me changing my code?" This walkthrough is the answer.
+**Origin:** the natural follow-on to [W3](#w3-user-facing-api-decorators-instrumentation-wrappers) — once `trace_step` and `trace_model_instance` are demystified, the next question is "but how does `import traceml; traceml run train.py` actually time the forward pass without me changing my code?" This walkthrough is the answer.
 
 ### Short answer
 
@@ -806,7 +806,7 @@ The module's docstring sets the contract: **one ordered event stream per rank**,
 - `gpu_time_ms` — initially `None`, filled later by `try_resolve()`
 - `resolved: bool` — whether this event's GPU side has been read out yet
 
-The `try_resolve` method (lines 65–90) is the non-blocking handoff. CUDA events can be queried for completion without forcing a stream synchronization (`gpu_end.query()` returns immediately with True/False). Only when the end-event has actually fired on the GPU do we (a) compute `gpu_start.elapsed_time(gpu_end)` (in milliseconds), (b) return both events to the pool, (c) drop the references, (d) flip `resolved=True`. **This is what keeps TraceML out of the critical path:** the runtime never calls `torch.cuda.synchronize()`. The forward call returns to Python the moment the kernels are *enqueued*; the GPU time is filled in a sampler tick later. See [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) for why streams + events let you do this and [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the API stability discussion. The non-CUDA branch (line 87) just sets `resolved=True` and skips elapsed-time computation.
+The `try_resolve` method (lines 65–90) is the non-blocking handoff. CUDA events can be queried for completion without forcing a stream synchronization (`gpu_end.query()` returns immediately with True/False). Only when the end-event has actually fired on the GPU do we (a) compute `gpu_start.elapsed_time(gpu_end)` (in milliseconds), (b) return both events to the pool, (c) drop the references, (d) flip `resolved=True`. **This is what keeps TraceML out of the critical path:** the runtime never calls `torch.cuda.synchronize()`. The forward call returns to Python the moment the kernels are *enqueued*; the GPU time is filled in a sampler tick later. See [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) for why streams + events let you do this and [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the API stability discussion. The non-CUDA branch (line 87) just sets `resolved=True` and skips elapsed-time computation.
 
 **Two queues + one buffer (lines 108–111).** This is the heart of the pipeline:
 
@@ -818,7 +818,7 @@ _STEP_BUFFER: Deque[TimeEvent] = deque()
 
 The two `Queue`s are thread-safe handoffs to the runtime sampler thread. The bare `deque` is *not* thread-safe in the general case, but it's used as a single-producer single-consumer buffer here: events go in on whichever thread is running the patched forward/backward, and they're drained inside `flush_step_time_buffer` on the same thread that called `trace_step.__exit__` (the training thread). No cross-thread access during normal operation.
 
-**`record_event` / `flush_step_time_buffer` (lines 148–180).** These are the producer side. `record_event` routes by scope: STEP goes into `_STEP_BUFFER` (cheap append, no queue contention), GLOBAL goes immediately into the GLOBAL queue. At step boundary, `flush_step_time_buffer(step)` drains the deque, stamps each event's `step` field, packages them into a `StepTimeBatch(step=step, events=[...])`, and `put_nowait`s the batch onto `_STEP_TIME_QUEUE`. The `Full` exception path (line 142) is fail-open: drop the batch, log to stderr, training continues. This is the same fail-open philosophy as cli.py ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator)).
+**`record_event` / `flush_step_time_buffer` (lines 148–180).** These are the producer side. `record_event` routes by scope: STEP goes into `_STEP_BUFFER` (cheap append, no queue contention), GLOBAL goes immediately into the GLOBAL queue. At step boundary, `flush_step_time_buffer(step)` drains the deque, stamps each event's `step` field, packages them into a `StepTimeBatch(step=step, events=[...])`, and `put_nowait`s the batch onto `_STEP_TIME_QUEUE`. The `Full` exception path (line 142) is fail-open: drop the batch, log to stderr, training continues. This is the same fail-open philosophy as cli.py ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator)).
 
 The reason for buffering until step boundary, rather than enqueueing each event immediately, is **atomicity**: a step's forward + backward + dataloader-fetch + optimizer events are conceptually one unit. Aggregating them as a batch lets the consumer reason about complete steps; partial steps from a dropped queue are easier to detect.
 
@@ -836,9 +836,9 @@ The asymmetry between the two try blocks matters: the first (lines 213–220) ca
 
 Why a pool exists: `torch.cuda.Event(enable_timing=True)` allocates a CUDA event handle, which involves a driver call. Doing this twice per `timed_region` invocation (start + end), inside every forward of every step, would be visible overhead. Pre-allocate, reuse, recycle.
 
-**Implementation (lines 15–48).** A `deque(maxlen=2000)` plus a `threading.Lock`. `acquire` pops from the deque if available, else allocates a fresh event. `release` appends back if there's room (the maxlen bound is a safety valve — if we ever leak events faster than we recycle, the pool never grows unbounded). `enable_timing=True` is the critical kwarg: without it, you cannot call `gpu_start.elapsed_time(gpu_end)`, only check completion. See [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the full surface area TraceML depends on.
+**Implementation (lines 15–48).** A `deque(maxlen=2000)` plus a `threading.Lock`. `acquire` pops from the deque if available, else allocates a fresh event. `release` appends back if there's room (the maxlen bound is a safety valve — if we ever leak events faster than we recycle, the pool never grows unbounded). `enable_timing=True` is the critical kwarg: without it, you cannot call `gpu_start.elapsed_time(gpu_end)`, only check completion. See [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) for the full surface area TraceML depends on.
 
-**Sizing (line 52): `max_size=2000`.** This is enough to absorb a few hundred per-step events (dataloader, forward, backward, optimizer, plus per-layer hooks from [W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks)) across many in-flight steps without ever blocking the producer or hitting the allocation path. The lock ensures the pool is safe to share across the training thread and any sampler / runtime thread that resolves events asynchronously.
+**Sizing (line 52): `max_size=2000`.** This is enough to absorb a few hundred per-step events (dataloader, forward, backward, optimizer, plus per-layer hooks from [W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks)) across many in-flight steps without ever blocking the producer or hitting the allocation path. The lock ensures the pool is safe to share across the training thread and any sampler / runtime thread that resolves events asynchronously.
 
 The lifecycle ties back to `try_resolve` in timing.py: events are only returned to the pool *after* their elapsed time has been read out, which in turn happens only after the GPU has finished the work they bracket. So an event is "out" exactly during the window from `start_evt.record()` to the next sampler tick that observes `end_evt.query() == True`.
 
@@ -847,7 +847,7 @@ The lifecycle ties back to `try_resolve` in timing.py: events are only returned 
 Different shape from timing, same pipeline pattern. A `StepMemoryEvent` (lines 17–28) records peak allocated and peak reserved bytes for one step on one device. The mechanism (lines 49–73):
 
 - **`reset()`**: `torch.cuda.reset_peak_memory_stats(device)` at step start. PyTorch's caching allocator tracks a high-water mark; this zeros it.
-- **`record()`**: `torch.cuda.max_memory_allocated(device)` and `torch.cuda.max_memory_reserved(device)` at step end. These read the high-water mark since the last reset. See [P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) for what "allocated" vs "reserved" mean — allocated is bytes handed out to live tensors, reserved is bytes the caching allocator has claimed from the driver.
+- **`record()`**: `torch.cuda.max_memory_allocated(device)` and `torch.cuda.max_memory_reserved(device)` at step end. These read the high-water mark since the last reset. See [P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) for what "allocated" vs "reserved" mean — allocated is bytes handed out to live tensors, reserved is bytes the caching allocator has claimed from the driver.
 
 This is genuinely cheap — two driver-state reads per step, no per-tensor accounting. The non-CUDA branch (lines 74–76) emits a sentinel event with zeros, so the schema stays consistent and the renderer doesn't have to special-case "no GPU."
 
@@ -873,7 +873,7 @@ _ORIG_MODULE_CALL = nn.Module.__call__   # save the original
 nn.Module.__call__ = _traceml_module_call  # replace it on the class
 ```
 
-This is class-level monkey-patching: every existing `nn.Module` *instance*, plus every instance created in the future, picks up the new `__call__` method via Python's normal method-resolution-order lookup. There's no per-model registration; the patch is a single global mutation. See [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) for why patching `__call__` (which delegates to `_call_impl` internally) is the right insertion point — it's the single funnel through which `model(x)` flows, and it sits *outside* the public `forward_pre_hook` / `forward_hook` chain so it can wrap the entire hook execution as one event.
+This is class-level monkey-patching: every existing `nn.Module` *instance*, plus every instance created in the future, picks up the new `__call__` method via Python's normal method-resolution-order lookup. There's no per-model registration; the patch is a single global mutation. See [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) for why patching `__call__` (which delegates to `_call_impl` internally) is the right insertion point — it's the single funnel through which `model(x)` flows, and it sits *outside* the public `forward_pre_hook` / `forward_hook` chain so it can wrap the entire hook execution as one event.
 
 The wrapper logic (lines 24–39):
 
@@ -891,17 +891,17 @@ def _traceml_module_call(self, *args, **kwargs):
         _set_depth(_depth() - 1)
 ```
 
-The **enable flag** (line 25) ensures we only time inside an active `trace_step` — without it, every `nn.Linear(...)` constructor in your script would also be timed (constructors don't trigger `__call__`, but `model.apply(init_fn)` and similar do). The **depth check** (line 29) is the submodule-spam guard: `model(x)` invokes the top-level module's `__call__`, which during `forward()` invokes child `__call__`s, which invoke grandchild `__call__`s. Without depth, you'd record one event per node in the module tree. With depth, only the outermost call (depth transitions 0 → 1) opens a `timed_region`; everything inside reuses the original method directly. The result is one `forward_time` event per top-level forward, which is what the step-time renderer wants. Per-layer breakdowns are a separate concern — handled by explicit hooks in [W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks).
+The **enable flag** (line 25) ensures we only time inside an active `trace_step` — without it, every `nn.Linear(...)` constructor in your script would also be timed (constructors don't trigger `__call__`, but `model.apply(init_fn)` and similar do). The **depth check** (line 29) is the submodule-spam guard: `model(x)` invokes the top-level module's `__call__`, which during `forward()` invokes child `__call__`s, which invoke grandchild `__call__`s. Without depth, you'd record one event per node in the module tree. With depth, only the outermost call (depth transitions 0 → 1) opens a `timed_region`; everything inside reuses the original method directly. The result is one `forward_time` event per top-level forward, which is what the step-time renderer wants. Per-layer breakdowns are a separate concern — handled by explicit hooks in [W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks).
 
-The **thread-local storage** (`_TLS = threading.local()`, line 7) means depth and enable are per-thread, not global. If two threads happen to both run forward (rare in standard single-thread training, but real for some inference servers), they don't interfere with each other's depth counters. See [P25](traceml_pytorch_qa.md#p25-how-does-num_workers--0-actually-work--threads-processes-ipc) for how DataLoader workers achieve their own isolation via processes.
+The **thread-local storage** (`_TLS = threading.local()`, line 7) means depth and enable are per-thread, not global. If two threads happen to both run forward (rare in standard single-thread training, but real for some inference servers), they don't interfere with each other's depth counters. See [P25](pytorch-qa.md#p25-how-does-num_workers-0-actually-work-threads-processes-ipc) for how DataLoader workers achieve their own isolation via processes.
 
-The `forward_auto_timer` context manager (lines 50–63) is the on-switch — `trace_step` ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)) enters it before stepping forward and exits after, flipping `_traceml_forward_enabled` on and off and resetting depth to 0 on exit (a defensive cleanup in case an unbalanced exception left depth nonzero).
+The `forward_auto_timer` context manager (lines 50–63) is the on-switch — `trace_step` ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)) enters it before stepping forward and exits after, flipping `_traceml_forward_enabled` on and off and resetting depth to 0 on exit (a defensive cleanup in case an unbalanced exception left depth nonzero).
 
 The **idempotency sentinel** (lines 44–47) — `nn.Module._traceml_forward_patched = True` — prevents double-patching if `patch_forward()` is called twice (e.g., the runtime initializes once, then a Lightning callback initializes again). Double-patching would either lose the original (if you save `nn.Module.__call__` after it's already been replaced) or stack two wrappers (if the second call doesn't notice the first ran). Either way, broken; the sentinel makes the patch a no-op on subsequent calls.
 
 ##### backward_auto_timer_patch.py (lines 1–88)
 
-Same shape, but **two entry points get patched** because PyTorch exposes two ways to trigger backward ([P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step)):
+Same shape, but **two entry points get patched** because PyTorch exposes two ways to trigger backward ([P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step)):
 
 - `loss.backward()` → `torch.Tensor.backward` (the method)
 - `torch.autograd.backward(tensors, grads)` → `torch.autograd.backward` (the function)
@@ -927,7 +927,7 @@ def _traceml_dataloader_iter(self):
         yield batch
 ```
 
-The structure is "drive the original iterator manually so we can wrap each `next()` call." Notice `use_gpu=False`: dataloader work is CPU-bound (file I/O, decoding, augmentation, optional `pin_memory` host→pinned-host copy) — see [P25](traceml_pytorch_qa.md#p25-how-does-num_workers--0-actually-work--threads-processes-ipc) and [P26](traceml_pytorch_qa.md#p26-what-is-pin_memorytrue-and-when-does-it-help). Charging CUDA events for this would just add noise. The CPU wall clock is what matters: high `dataloader_next` time means workers can't keep up with GPU compute, which is a classic input-pipeline bottleneck.
+The structure is "drive the original iterator manually so we can wrap each `next()` call." Notice `use_gpu=False`: dataloader work is CPU-bound (file I/O, decoding, augmentation, optional `pin_memory` host→pinned-host copy) — see [P25](pytorch-qa.md#p25-how-does-num_workers-0-actually-work-threads-processes-ipc) and [P26](pytorch-qa.md#p26-what-is-pin_memorytrue-and-when-does-it-help). Charging CUDA events for this would just add noise. The CPU wall clock is what matters: high `dataloader_next` time means workers can't keep up with GPU compute, which is a classic input-pipeline bottleneck.
 
 **No enable flag here** — every `DataLoader.__iter__` in the process is wrapped, always. This is intentional: dataloader fetch happens *inside* `trace_step` (via the for-loop driving training), so only step-scoped events get buffered; events outside any active step still go through the patch but their `record_event` call routes to the STEP buffer regardless. (Subtle: this means dataloader fetches that happen outside `trace_step` — e.g., a sanity-check pass before training — would accumulate in the buffer and only flush on the *next* `flush_step_time_buffer` call. In practice negligible because users either wrap everything or nothing.) **No depth check** because `DataLoader.__iter__` doesn't recurse.
 
@@ -943,15 +943,15 @@ The pattern (lines 36–50):
 - Register a **forward pre-hook** that sets `EXECUTION_LAYER.current = f"forward_{name}"` *before* the layer runs.
 - Register a **forward hook** that, on the layer's output tensor, attaches a **backward hook** via `output.register_hook(BackwardEntryHook(name))`. This backward hook fires when the autograd engine reaches that tensor's gradient computation, and sets `EXECUTION_LAYER.current = f"backward_{name}"`.
 
-The clever bit: PyTorch doesn't expose a "before-backward-of-this-module" hook directly. But you *can* register a hook on a tensor that fires when its gradient is computed. By attaching one to each layer's output during the forward, you get a callback right when autograd is about to descend into that layer's grad function. This is roughly the same trick the per-layer backward-time hooks in [W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks) build on. See [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) for the exact firing order of these hooks.
+The clever bit: PyTorch doesn't expose a "before-backward-of-this-module" hook directly. But you *can* register a hook on a tensor that fires when its gradient is computed. By attaching one to each layer's output during the forward, you get a callback right when autograd is about to descend into that layer's grad function. This is roughly the same trick the per-layer backward-time hooks in [W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks) build on. See [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) for the exact firing order of these hooks.
 
 The `_traceml_exec_hook` flag on the tensor (line 32) prevents double-registration if the same output flows through multiple layers (e.g., residual connections). The `_execution_entry_hook_registry` dict keyed on `id(model)` (lines 7, 38, 50) prevents re-attachment if `attach_execution_entry_hooks` is called twice for the same model.
 
-`EXECUTION_LAYER.current` is consumed by the error logger ([Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)): when a sampler or hook raises, the error log gets tagged with which layer was executing at the time. So if a NaN appears in `decoder.attn.q_proj`, the traceback includes that name even if Python's stack trace bottomed out in some opaque autograd internal.
+`EXECUTION_LAYER.current` is consumed by the error logger ([Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)): when a sampler or hook raises, the error log gets tagged with which layer was executing at the time. So if a NaN appears in `decoder.attn.q_proj`, the traceback includes that name even if Python's stack trace bottomed out in some opaque autograd internal.
 
 #### flush_buffers.py — the step-boundary fanout (lines 1–37)
 
-Tiny but central. `flush_step_events(model, step)` is called by `trace_step.__exit__` ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)) and synchronously drains every per-step buffer in the runtime: layer forward memory, layer backward memory, layer forward time, layer backward time, model forward memory, step memory, step time. Six layer-level flushes plus two step-level. After this call returns, all events for the just-completed step are in their respective queues (or dropped, fail-open) and ready for the runtime sampler thread to pick up. The disabled-fast-path at line 28 short-circuits when `TRACEML_DISABLED=1` — zero per-step overhead in the bypass case.
+Tiny but central. `flush_step_events(model, step)` is called by `trace_step.__exit__` ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)) and synchronously drains every per-step buffer in the runtime: layer forward memory, layer backward memory, layer forward time, layer backward time, model forward memory, step memory, step time. Six layer-level flushes plus two step-level. After this call returns, all events for the just-completed step are in their respective queues (or dropped, fail-open) and ready for the runtime sampler thread to pick up. The disabled-fast-path at line 28 short-circuits when `TRACEML_DISABLED=1` — zero per-step overhead in the bypass case.
 
 Order doesn't strictly matter for correctness (each flush touches a different buffer) but the convention is layer-first, then aggregates — matches the natural "details first, summary last" reading order of the renderers.
 
@@ -965,21 +965,21 @@ Putting the architecture together:
 4. The **`timed_region` context manager** unifies CPU + CUDA timing into one event type and one buffer.
 5. The **CUDA event pool** keeps the per-event allocation cost amortized to zero.
 6. The **step buffer + flush** model batches a step's events atomically and hands them to the sampler thread via `put_nowait` — no blocking on the training thread, no synchronization with the GPU.
-7. The **entry hooks** provide layer-name attribution for diagnostics, complementing (not replacing) the per-layer measurement hooks in [W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks).
+7. The **entry hooks** provide layer-name attribution for diagnostics, complementing (not replacing) the per-layer measurement hooks in [W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks).
 8. The **flush fanout** in flush_buffers.py is the single line `trace_step` calls to close out a step.
 
-The end-to-end result: your `for batch in loader: model(batch); loss.backward(); optimizer.step()` loop, unmodified, produces a stream of `StepTimeBatch`es and `StepMemoryEvent`s on internal queues. The samplers ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)) drain those queues and turn them into rows for the Database ([W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)).
+The end-to-end result: your `for batch in loader: model(batch); loss.backward(); optimizer.step()` loop, unmodified, produces a stream of `StepTimeBatch`es and `StepMemoryEvent`s on internal queues. The samplers ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)) drain those queues and turn them into rows for the Database ([W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)).
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks / monkey-patching)** → this directory *is* the canonical TraceML answer to "what does in-process injection look like?" Three class-level method replacements (`nn.Module.__call__`, `Tensor.backward`, `DataLoader.__iter__`) plus PyTorch's public hook API in `entry_hook.py`.
-- **[Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) (CUDA streams)** → `start_evt.record()` / `end_evt.record()` enqueue markers on the current stream; `gpu_end.query()` / `start.elapsed_time(end)` read them out without blocking the launching CPU thread. This is the entire reason TraceML can time GPU work without inserting a `torch.cuda.synchronize()`.
-- **[P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → backward_auto_timer_patch patches both `torch.Tensor.backward` and `torch.autograd.backward` because P14 explains they're two callable surfaces over the same underlying engine.
-- **[P25](traceml_pytorch_qa.md#p25-how-does-num_workers--0-actually-work--threads-processes-ipc) (DataLoader workers)** → dataloader_patch wraps `__iter__` rather than the workers themselves, so it works identically for `num_workers=0` (synchronous fetch on the main thread) and `num_workers>0` (workers in subprocesses, IPC over pipes). The CPU wall clock around `next(it)` captures the user-visible "time the consumer waited for a batch."
-- **[P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → step_memory.py uses `reset_peak_memory_stats` / `max_memory_allocated` / `max_memory_reserved`, the three caching-allocator query APIs, to bracket peak memory per step at zero per-tensor cost.
-- **[P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl`)** → forward_auto_timer_patch replaces `nn.Module.__call__` (which is what `_call_impl` is bound to). P48 explains why patching here, rather than just using `forward_pre_hook` / `forward_hook`, gives a single funnel that wraps the *entire* hook chain as one timed region.
-- **[P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → entry_hook.py uses `register_forward_pre_hook` (fires before forward) and chains a tensor-level `register_hook` (fires during backward) to mark execution-layer state at exactly the right moments.
-- **[P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) (torch.cuda API surface)** → this directory exercises the entire surface: `torch.cuda.Event(enable_timing=True)`, `event.record()`, `event.query()`, `start.elapsed_time(end)`, `torch.cuda.current_device()`, `torch.cuda.is_available()`, plus the memory APIs in step_memory.py. CLAUDE.md flags this as the brittle area; this walkthrough is exactly where the brittleness lives.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks / monkey-patching)** → this directory *is* the canonical TraceML answer to "what does in-process injection look like?" Three class-level method replacements (`nn.Module.__call__`, `Tensor.backward`, `DataLoader.__iter__`) plus PyTorch's public hook API in `entry_hook.py`.
+- **[Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) (CUDA streams)** → `start_evt.record()` / `end_evt.record()` enqueue markers on the current stream; `gpu_end.query()` / `start.elapsed_time(end)` read them out without blocking the launching CPU thread. This is the entire reason TraceML can time GPU work without inserting a `torch.cuda.synchronize()`.
+- **[P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → backward_auto_timer_patch patches both `torch.Tensor.backward` and `torch.autograd.backward` because P14 explains they're two callable surfaces over the same underlying engine.
+- **[P25](pytorch-qa.md#p25-how-does-num_workers-0-actually-work-threads-processes-ipc) (DataLoader workers)** → dataloader_patch wraps `__iter__` rather than the workers themselves, so it works identically for `num_workers=0` (synchronous fetch on the main thread) and `num_workers>0` (workers in subprocesses, IPC over pipes). The CPU wall clock around `next(it)` captures the user-visible "time the consumer waited for a batch."
+- **[P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → step_memory.py uses `reset_peak_memory_stats` / `max_memory_allocated` / `max_memory_reserved`, the three caching-allocator query APIs, to bracket peak memory per step at zero per-tensor cost.
+- **[P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl`)** → forward_auto_timer_patch replaces `nn.Module.__call__` (which is what `_call_impl` is bound to). P48 explains why patching here, rather than just using `forward_pre_hook` / `forward_hook`, gives a single funnel that wraps the *entire* hook chain as one timed region.
+- **[P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → entry_hook.py uses `register_forward_pre_hook` (fires before forward) and chains a tensor-level `register_hook` (fires during backward) to mark execution-layer state at exactly the right moments.
+- **[P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) (torch.cuda API surface)** → this directory exercises the entire surface: `torch.cuda.Event(enable_timing=True)`, `event.record()`, `event.query()`, `start.elapsed_time(end)`, `torch.cuda.current_device()`, `torch.cuda.is_available()`, plus the memory APIs in step_memory.py. CLAUDE.md flags this as the brittle area; this walkthrough is exactly where the brittleness lives.
 
 ### Concepts introduced
 
@@ -991,21 +991,21 @@ Class-level monkey-patching of dunder methods, idempotent patching via sentinel 
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py](traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py) (267 lines)
-- [traceml/src/traceml/utils/hooks/layer_backward_time_hooks.py](traceml/src/traceml/utils/hooks/layer_backward_time_hooks.py) (264 lines)
-- [traceml/src/traceml/utils/hooks/layer_forward_memory_hook.py](traceml/src/traceml/utils/hooks/layer_forward_memory_hook.py) (190 lines)
-- [traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py](traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py) (222 lines)
-- [traceml/src/traceml/utils/hooks/model_forward_memory_hook.py](traceml/src/traceml/utils/hooks/model_forward_memory_hook.py) (115 lines)
-- [traceml/src/traceml/utils/hooks/optimizer_hook.py](traceml/src/traceml/utils/hooks/optimizer_hook.py) (101 lines)
-- [traceml/src/traceml/utils/layer_parameter_memory.py](traceml/src/traceml/utils/layer_parameter_memory.py) (54 lines)
+- [traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_time_hooks.py) (267 lines)
+- [traceml/src/traceml/utils/hooks/layer_backward_time_hooks.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_time_hooks.py) (264 lines)
+- [traceml/src/traceml/utils/hooks/layer_forward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_memory_hook.py) (190 lines)
+- [traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py) (222 lines)
+- [traceml/src/traceml/utils/hooks/model_forward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/model_forward_memory_hook.py) (115 lines)
+- [traceml/src/traceml/utils/hooks/optimizer_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/optimizer_hook.py) (101 lines)
+- [traceml/src/traceml/utils/layer_parameter_memory.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/layer_parameter_memory.py) (54 lines)
 
-**Reads cleanly with:** [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread), [P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules), [P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator), [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated), [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)
+**Reads cleanly with:** [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread), [P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules), [P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator), [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated), [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)
 
-**Origin:** [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) covered the whole-model `__call__` patch — the *outer* timing boundary. This walkthrough is the inner counterpart: the per-leaf-module hooks that PyTorch fires *inside* that boundary, one pair per layer per pass. P49 nailed down the firing order conceptually; here we look at the concrete hook objects, the FIFO pairing trick, and why memory hooks are post-only while time hooks are pre+post.
+**Origin:** [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) covered the whole-model `__call__` patch — the *outer* timing boundary. This walkthrough is the inner counterpart: the per-leaf-module hooks that PyTorch fires *inside* that boundary, one pair per layer per pass. P49 nailed down the firing order conceptually; here we look at the concrete hook objects, the FIFO pairing trick, and why memory hooks are post-only while time hooks are pre+post.
 
 ### Short answer
 
-`utils/hooks/` contains the per-leaf-module instrumentation: pre/post hook callables that PyTorch's `Module._call_impl` invokes around every forward and backward pass of every leaf submodule. Each `attach_*_hooks` function walks `model.named_modules()` once at attach time, filters to leaves via `get_hookable_modules`, and registers callables built around closures over `model_id` and `layer_name`. Hook callbacks push lightweight events into module-global buffers; **these buffers are flushed to a `queue.Queue` only at step boundaries** by `flush_*_buffers`, which the runtime calls from inside the `trace_step` context manager ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)). This separates the latency-sensitive hot path (record a few floats and one CUDA event) from the consumer ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)), and is the per-layer counterpart of W4's whole-model `__call__` patch.
+`utils/hooks/` contains the per-leaf-module instrumentation: pre/post hook callables that PyTorch's `Module._call_impl` invokes around every forward and backward pass of every leaf submodule. Each `attach_*_hooks` function walks `model.named_modules()` once at attach time, filters to leaves via `get_hookable_modules`, and registers callables built around closures over `model_id` and `layer_name`. Hook callbacks push lightweight events into module-global buffers; **these buffers are flushed to a `queue.Queue` only at step boundaries** by `flush_*_buffers`, which the runtime calls from inside the `trace_step` context manager ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)). This separates the latency-sensitive hot path (record a few floats and one CUDA event) from the consumer ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)), and is the per-layer counterpart of W4's whole-model `__call__` patch.
 
 ### Long answer
 
@@ -1013,22 +1013,22 @@ Class-level monkey-patching of dunder methods, idempotent patching via sentinel 
 
 All six hook files are variations on the same five-part skeleton, so it's worth fixing the template before going through them individually:
 
-1. A **module-global `Queue`** with a small `maxsize` — the boundary between hook code (producer) and sampler ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)) (consumer). `put_nowait` + `except Full: pass` means the producer never blocks; if the consumer falls behind, the oldest unflushed step's events get dropped silently. **This is the fail-open principle from [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) all the way down at the leaf level.**
+1. A **module-global `Queue`** with a small `maxsize` — the boundary between hook code (producer) and sampler ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)) (consumer). `put_nowait` + `except Full: pass` means the producer never blocks; if the consumer falls behind, the oldest unflushed step's events get dropped silently. **This is the fail-open principle from [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) all the way down at the leaf level.**
 2. A **registry dict `{model_id: True}`** keyed by `id(model)` — used to make `attach_*_hooks` idempotent. Calling it twice on the same model is a no-op. (Calling it on two distinct model instances still works — `id()` is unique per live object.)
 3. A **per-model in-flight buffer** (sometimes a list, sometimes a `Dict[layer_name, deque]`) that hooks write into during the step.
 4. A pair of **hook callables** — classes with `__init__` capturing `model_id, layer_name, on_gpu`, and `__call__` taking PyTorch's hook signature. Wrapped in a try/except printing `[TraceML]` to stderr, so a hook bug never propagates into user training (same broad-except discipline as W4).
 5. A **`flush_*_buffers(model, step)` function** called at step boundaries (from `trace_step` exit / runtime tick). It moves the in-flight buffer into a single `*StepEvent` dataclass and pushes it onto the Queue.
 
-The dataclasses (`LayerForwardTimeEvent`, `LayerBackwardMemoryEvents`, etc.) are deliberately **transient internal types** — they live in the producer-side process memory only, never get serialized over TCP. The samplers ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)) consume them, aggregate (sum across invocations, resolve GPU events) and only *then* materialize the rows that go into the Database ([W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)).
+The dataclasses (`LayerForwardTimeEvent`, `LayerBackwardMemoryEvents`, etc.) are deliberately **transient internal types** — they live in the producer-side process memory only, never get serialized over TCP. The samplers ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)) consume them, aggregate (sum across invocations, resolve GPU events) and only *then* materialize the rows that go into the Database ([W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)).
 
 #### `shared_utils.get_hookable_modules` — the layer selector
 
 Every `attach_*_hooks` uses `get_hookable_modules(model, include_names, exclude_names, leaf_only=True)` (defined in `utils/shared_utils.py`, lines 11–37). Two important behaviors:
 
-- It iterates `model.named_modules()` — **all** descendants, root included, in pre-order (see [P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules) for `named_children` vs `named_modules`).
+- It iterates `model.named_modules()` — **all** descendants, root included, in pre-order (see [P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules) for `named_children` vs `named_modules`).
 - With `leaf_only=True` (the default), the predicate is `if any(module.children()): continue` — a leaf is anything with no children iterators. So `Linear`, `LayerNorm`, `Conv2d` get hooks; `Sequential`, `TransformerBlock`, the root model do not.
 
-The "leaf only" choice is load-bearing. If you hooked container modules too, every forward through a `TransformerBlock` would record both the block's time and the time of every leaf inside it, double- or triple-counting. Restricting to leaves means the per-layer telemetry sums to a sensible total (modulo activation checkpointing, which re-runs forwards). This is also how the parameter memory file ([`layer_parameter_memory.py`](traceml/src/traceml/utils/layer_parameter_memory.py)) avoids overcounting — it uses the same leaf rule (`if any(module.children()): continue`) and `parameters(recurse=False)`.
+The "leaf only" choice is load-bearing. If you hooked container modules too, every forward through a `TransformerBlock` would record both the block's time and the time of every leaf inside it, double- or triple-counting. Restricting to leaves means the per-layer telemetry sums to a sensible total (modulo activation checkpointing, which re-runs forwards). This is also how the parameter memory file ([`layer_parameter_memory.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/layer_parameter_memory.py)) avoids overcounting — it uses the same leaf rule (`if any(module.children()): continue`) and `parameters(recurse=False)`.
 
 `include_names` / `exclude_names` are substring filters (note `inc in name`, not exact match) — useful for cutting noise like `"dropout"` from a transformer or restricting hooks to `"attn"` blocks while debugging.
 
@@ -1051,16 +1051,16 @@ There are three real ways this happens:
 
 Naively using a single `start` field per `(model_id, layer_name)` would clobber the second invocation's start before the first's post-hook ran. Using a deque means: each pre-hook `append`s, each post-hook `popleft`s — invocations are paired in execution order. As long as forwards and backwards on a given module are LIFO/FIFO-balanced (which they are within a single backward graph), the deque drains cleanly each step.
 
-Subtle implication for the Python runtime: this only works because **CPython hook execution is single-threaded under the GIL**. There is no race between two threads racing into the same `(model_id, layer_name)` deque, so a plain `collections.deque` (already thread-safe for `append`/`popleft`, but we don't even need that) is fine. Multi-stream CUDA execution doesn't change this — the hook *callbacks* are still issued sequentially from the Python main thread, even though the kernels they wrap may overlap on different streams ([Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)).
+Subtle implication for the Python runtime: this only works because **CPython hook execution is single-threaded under the GIL**. There is no race between two threads racing into the same `(model_id, layer_name)` deque, so a plain `collections.deque` (already thread-safe for `append`/`popleft`, but we don't even need that) is fine. Multi-stream CUDA execution doesn't change this — the hook *callbacks* are still issued sequentially from the Python main thread, even though the kernels they wrap may overlap on different streams ([Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)).
 
 **The CUDA event dance (lines 79–104, `try_resolve`):**
 
 The hook does *not* call `torch.cuda.synchronize()` or `gpu_end.synchronize()` — that would gate CPU on GPU completion and serialize what's supposed to be an async pipeline. Instead:
 
-- Pre-hook: pull a recycled `torch.cuda.Event` from the pool ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) covered `cuda_event_pool`) and `record()` it on the current stream — this enqueues a marker; the call returns immediately.
+- Pre-hook: pull a recycled `torch.cuda.Event` from the pool ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) covered `cuda_event_pool`) and `record()` it on the current stream — this enqueues a marker; the call returns immediately.
 - Post-hook: pull another event, `record()` it.
 - The event is filed into `_layer_forward_time_event_buffer` with `resolved=False`.
-- `try_resolve()` is called *later* by the sampler ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)). It calls `gpu_end.query()` which is non-blocking — returns True if the GPU has actually reached that marker, False otherwise. Only when True does the sampler call `gpu_start.elapsed_time(gpu_end)` (which is also non-blocking once both events have completed) and free the events back to the pool.
+- `try_resolve()` is called *later* by the sampler ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)). It calls `gpu_end.query()` which is non-blocking — returns True if the GPU has actually reached that marker, False otherwise. Only when True does the sampler call `gpu_start.elapsed_time(gpu_end)` (which is also non-blocking once both events have completed) and free the events back to the pool.
 
 This is the per-layer realization of the pattern `Q15 → P51` describes for the timing primitives. Net cost in the hot path: two pool dequeues, two `record()` calls, a `time.perf_counter()`, and a deque append. No syncs, no allocations beyond the tiny start-record dict.
 
@@ -1070,14 +1070,14 @@ This is the per-layer realization of the pattern `Q15 → P51` describes for the
 
 **`attach_layer_forward_time_hooks` (244–267):**
 
-Idempotency check via the registry, then a single pass over `get_hookable_modules`. For each leaf, `register_forward_pre_hook` and `register_forward_hook` — see [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) for the firing order PyTorch guarantees around `forward()`. Note `on_gpu` is computed *once at attach time* via `model_is_on_cuda(model)` and baked into every hook's closure — so if you do `model.cpu()` after attaching, the hooks will keep allocating CUDA events and break. The patches in [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) attach hooks lazily on first forward, which sidesteps this for normal flows.
+Idempotency check via the registry, then a single pass over `get_hookable_modules`. For each leaf, `register_forward_pre_hook` and `register_forward_hook` — see [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) for the firing order PyTorch guarantees around `forward()`. Note `on_gpu` is computed *once at attach time* via `model_is_on_cuda(model)` and baked into every hook's closure — so if you do `model.cpu()` after attaching, the hooks will keep allocating CUDA events and break. The patches in [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) attach hooks lazily on first forward, which sidesteps this for normal flows.
 
 #### `layer_backward_time_hooks.py` — same shape, backward variant
 
 Structurally identical (267 → 264 lines is mostly the same code with renamed buffers/classes). Three differences worth flagging:
 
 1. **`register_full_backward_pre_hook` / `register_full_backward_hook`** (lines 257–262). The `_full_` variant is the modern PyTorch API; the older `register_backward_hook` had subtle bugs around in-place ops and is deprecated. Using the full variant is mandatory for correct grad attribution across modules with non-trivial input/output structure.
-2. **Hook signatures.** Pre-hook is `(module, grad_output)`; post-hook is `(module, grad_input, grad_output)`. The grads here are tuples-of-tensors, not single tensors — see [P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step) for what `grad_input`/`grad_output` mean in autograd terms.
+2. **Hook signatures.** Pre-hook is `(module, grad_output)`; post-hook is `(module, grad_input, grad_output)`. The grads here are tuples-of-tensors, not single tensors — see [P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step) for what `grad_input`/`grad_output` mean in autograd terms.
 3. **Backward is async too.** Because `loss.backward()` enqueues kernels on the same CUDA stream, the pre/post markers wrap exactly the GPU work for that module's `Function.backward`, even though the pre-hook returns to Python before any of those kernels actually run on the device. The `try_resolve` machinery is identical to the forward case.
 
 The deque-FIFO pairing matters even more in backward — autograd executes the modules in **reverse topological order of the forward graph**, so a shared `Linear` at positions 5 and 12 in the forward gets backward-fired in opposite order. The deque handles this naturally as long as PyTorch fires pre/post for each invocation as a pair, which it does.
@@ -1092,7 +1092,7 @@ This file (and its backward sibling) is meaningfully simpler than the timing fil
 
 A few details:
 
-- `tensor.numel() * tensor.element_size()` computes the **logical** tensor size in bytes (4 bytes/elem for float32, 2 for fp16/bf16). This is *not* the same as caching-allocator-allocated bytes for that tensor — see [P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) and [P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated). The allocator may pad for alignment, may keep a free block in reserve, etc. TraceML's per-layer memory is therefore an *attribution*, not an audit — useful for "which layer's activations are biggest?", not for explaining `torch.cuda.memory_allocated` to the byte. P52 spells out this distinction.
+- `tensor.numel() * tensor.element_size()` computes the **logical** tensor size in bytes (4 bytes/elem for float32, 2 for fp16/bf16). This is *not* the same as caching-allocator-allocated bytes for that tensor — see [P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) and [P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated). The allocator may pad for alignment, may keep a free block in reserve, etc. TraceML's per-layer memory is therefore an *attribution*, not an audit — useful for "which layer's activations are biggest?", not for explaining `torch.cuda.memory_allocated` to the byte. P52 spells out this distinction.
 - It only walks the top-level output structure, not nested dicts of dicts. Good enough for the standard cases (`(loss, logits)`, BERT-style `(seq_out, pooled_out, hidden_states)`).
 - `if total_bytes > 0` skips no-output layers (e.g. modules that just print and return None).
 
@@ -1109,7 +1109,7 @@ Different beast: this hooks the **root model** only (`register_forward_pre_hook`
 - **Pre-hook (lines 36–51):** `torch.cuda.reset_peak_memory_stats(device)` — zeroes the running max.
 - **Post-hook (54–81):** reads `torch.cuda.max_memory_allocated(device)` and `max_memory_reserved(device)`, packages into `ModelForwardMemoryEvent`.
 
-This gives a true caching-allocator reading of forward-pass peak memory, which is the number you'd compare against your GPU's total VRAM. It's the complement to the per-layer attribution: per-layer memory tells you *what to optimize*, model-level peak tells you *if you'll OOM*. See [P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) for what `memory_allocated` vs `memory_reserved` actually count and why they can diverge significantly.
+This gives a true caching-allocator reading of forward-pass peak memory, which is the number you'd compare against your GPU's total VRAM. It's the complement to the per-layer attribution: per-layer memory tells you *what to optimize*, model-level peak tells you *if you'll OOM*. See [P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) for what `memory_allocated` vs `memory_reserved` actually count and why they can diverge significantly.
 
 Note one quirk: the hook stores `step=-1` and `flush_*` patches it to the actual step. That's because the hook fires *during* forward, before the step counter has been incremented to its final value at step boundary — so the step assignment is deferred to the flush call where `TraceState.step` is authoritative.
 
@@ -1129,7 +1129,7 @@ These global registrars (added in PyTorch 1.13ish) install a callback that fires
 Mechanism (lines 31–87):
 
 - `pre_hook(optimizer, args, kwargs)` records `cpu_start`, allocates two CUDA events from the pool, records `gpu_start`, and stashes everything in `_OPT_INFLIGHT[id(optimizer)]`.
-- `post_hook(optimizer, args, kwargs)` pops the in-flight record, records `gpu_end`, builds a `TimeEvent(name="_traceml_internal:optimizer_step", scope=TimeScope.STEP)` and calls `record_event(evt)` (the timing primitive from [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)).
+- `post_hook(optimizer, args, kwargs)` pops the in-flight record, records `gpu_end`, builds a `TimeEvent(name="_traceml_internal:optimizer_step", scope=TimeScope.STEP)` and calls `record_event(evt)` (the timing primitive from [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)).
 - `_HANDLES` and `torch.optim.Optimizer._traceml_opt_hooks_installed` give double idempotency: module-level guard plus class-attribute guard. The class attribute is a defensive measure against re-imports — if the runtime gets reloaded mid-session, the second installation is skipped.
 
 The reserved name `"_traceml_internal:optimizer_step"` is a sentinel — the `:` prefix marks it as TraceML-managed so user-level analysis can filter it out from `trace_time`-decorated user functions. Goes through the same `record_event` path, so optimizer time appears alongside forward/backward in the unified time table.
@@ -1140,19 +1140,19 @@ Why a hook here and not a patch on `optimizer.step` directly? Because `Optimizer
 
 Tiny file (54 lines), no hooks at all. `collect_layer_parameter_memory(model)` walks `model.named_modules()`, skips containers (`if any(module.children()): continue`), and sums `p.element_size() * p.nelement()` over `module.parameters(recurse=False)` — the *non-recursive* form, so each parameter is counted exactly once at its owning leaf.
 
-This is run **once per model** by the model-queue sampler ([W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)) — parameter counts don't change during training (modulo LoRA adapters being added/removed mid-run, which TraceML doesn't try to track). The result is a static `Dict[layer_name, bytes]` that the renderer joins with the dynamic forward/backward memory tables to show "this layer has 16 MB of params + 64 MB of activations".
+This is run **once per model** by the model-queue sampler ([W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)) — parameter counts don't change during training (modulo LoRA adapters being added/removed mid-run, which TraceML doesn't try to track). The result is a static `Dict[layer_name, bytes]` that the renderer joins with the dynamic forward/backward memory tables to show "this layer has 16 MB of params + 64 MB of activations".
 
-The companion `model_queue` at the top is the inbox for "new model registered, please collect its parameter memory" — populated by `trace_model_instance` ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)) when the user wraps a model.
+The companion `model_queue` at the top is the inbox for "new model registered, please collect its parameter memory" — populated by `trace_model_instance` ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)) when the user wraps a model.
 
 ### How this code maps to earlier Q&A concepts
 
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks)** → every file is the literal answer to "what is injecting hooks in-process". The `register_forward_hook`/`register_full_backward_hook`/`register_optimizer_step_pre_hook` calls are the entry points; the closures-over-`model_id`-and-`layer_name` are the per-layer dispatch.
-- **[Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) (CUDA streams)** → `event.record()` enqueues a marker on the current stream and returns; `event.query()` is non-blocking; `elapsed_time` works once both events are reached. The whole "hook returns immediately, sampler resolves later" dance is built on this.
-- **[P12](traceml_pytorch_qa.md#p12-whats-the-difference-between-children-modules-named_modules) (named_modules)** → `get_hookable_modules` and `collect_layer_parameter_memory` both rely on `named_modules()` returning every descendant in pre-order, with a leaf check via `any(module.children())`.
-- **[P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → `model_forward_memory_hook.py` uses `reset_peak_memory_stats` + `max_memory_allocated` as a true allocator-level peak; the per-layer files use `numel * element_size` for tensor-level attribution. The two answer different questions.
-- **[P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → reified in: time hooks register pre+post pairs (so the conceptual order matters); memory hooks register post-only (so the order is moot). The FIFO deque pairing in `layer_forward_time_hooks` only works because PyTorch's documented invariant — pre fires before post for the same invocation, even on shared modules — holds.
-- **[P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) (per-layer memory)** → directly described by `layer_forward_memory_hook.py`'s `_tensor_size` and the design note that this is attribution, not audit; the model-level hook is what reconciles to allocator-level numbers.
-- **[W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) (patches + timing primitives)** → these per-layer hooks plug *into* the timing primitives (`get_cuda_event`, `record_event`, `TimeEvent`) and are *attached by* the patches. The whole-model `__call__` patch wraps; these hooks fire *inside* that wrap, one pair per leaf per pass.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks)** → every file is the literal answer to "what is injecting hooks in-process". The `register_forward_hook`/`register_full_backward_hook`/`register_optimizer_step_pre_hook` calls are the entry points; the closures-over-`model_id`-and-`layer_name` are the per-layer dispatch.
+- **[Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) (CUDA streams)** → `event.record()` enqueues a marker on the current stream and returns; `event.query()` is non-blocking; `elapsed_time` works once both events are reached. The whole "hook returns immediately, sampler resolves later" dance is built on this.
+- **[P12](pytorch-qa.md#p12-whats-the-difference-between-children-modules-named_modules) (named_modules)** → `get_hookable_modules` and `collect_layer_parameter_memory` both rely on `named_modules()` returning every descendant in pre-order, with a leaf check via `any(module.children())`.
+- **[P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → `model_forward_memory_hook.py` uses `reset_peak_memory_stats` + `max_memory_allocated` as a true allocator-level peak; the per-layer files use `numel * element_size` for tensor-level attribution. The two answer different questions.
+- **[P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → reified in: time hooks register pre+post pairs (so the conceptual order matters); memory hooks register post-only (so the order is moot). The FIFO deque pairing in `layer_forward_time_hooks` only works because PyTorch's documented invariant — pre fires before post for the same invocation, even on shared modules — holds.
+- **[P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) (per-layer memory)** → directly described by `layer_forward_memory_hook.py`'s `_tensor_size` and the design note that this is attribution, not audit; the model-level hook is what reconciles to allocator-level numbers.
+- **[W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) (patches + timing primitives)** → these per-layer hooks plug *into* the timing primitives (`get_cuda_event`, `record_event`, `TimeEvent`) and are *attached by* the patches. The whole-model `__call__` patch wraps; these hooks fire *inside* that wrap, one pair per leaf per pass.
 
 ### Concepts introduced
 
@@ -1164,19 +1164,19 @@ Per-leaf-only hook attachment (skip containers via `any(module.children())`), id
 
 **Date:** 2026-04-25
 **Files in scope:**
-- [traceml/src/traceml/samplers/base_sampler.py](traceml/src/traceml/samplers/base_sampler.py) (83 lines)
-- [traceml/src/traceml/samplers/step_time_sampler.py](traceml/src/traceml/samplers/step_time_sampler.py) (128 lines)
-- [traceml/src/traceml/samplers/step_memory_sampler.py](traceml/src/traceml/samplers/step_memory_sampler.py) (68 lines)
-- [traceml/src/traceml/samplers/layer_forward_memory_sampler.py](traceml/src/traceml/samplers/layer_forward_memory_sampler.py) (76 lines)
-- [traceml/src/traceml/samplers/system_sampler.py](traceml/src/traceml/samplers/system_sampler.py) (221 lines)
-- [traceml/src/traceml/samplers/process_sampler.py](traceml/src/traceml/samplers/process_sampler.py) (236 lines)
-- [traceml/src/traceml/samplers/runtime_context.py](traceml/src/traceml/samplers/runtime_context.py) (74 lines)
-- [traceml/src/traceml/samplers/utils.py](traceml/src/traceml/samplers/utils.py) (101 lines)
-- [traceml/src/traceml/samplers/schema/step_time_schema.py](traceml/src/traceml/samplers/schema/step_time_schema.py) (112 lines)
-- [traceml/src/traceml/samplers/schema/system.py](traceml/src/traceml/samplers/schema/system.py) (183 lines)
+- [traceml/src/traceml/samplers/base_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/base_sampler.py) (83 lines)
+- [traceml/src/traceml/samplers/step_time_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/step_time_sampler.py) (128 lines)
+- [traceml/src/traceml/samplers/step_memory_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/step_memory_sampler.py) (68 lines)
+- [traceml/src/traceml/samplers/layer_forward_memory_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/layer_forward_memory_sampler.py) (76 lines)
+- [traceml/src/traceml/samplers/system_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/system_sampler.py) (221 lines)
+- [traceml/src/traceml/samplers/process_sampler.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/process_sampler.py) (236 lines)
+- [traceml/src/traceml/samplers/runtime_context.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/runtime_context.py) (74 lines)
+- [traceml/src/traceml/samplers/utils.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/utils.py) (101 lines)
+- [traceml/src/traceml/samplers/schema/step_time_schema.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/schema/step_time_schema.py) (112 lines)
+- [traceml/src/traceml/samplers/schema/system.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/schema/system.py) (183 lines)
 - (skimmed) `layer_forward_time_sampler.py`, `layer_backward_time_sampler.py`, `layer_backward_memory_sampler.py`, `model_forward_memory_sampler.py`, `stdout_stderr_sampler.py`, `layer_memory_common.py`, `layer_time_common.py`
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works), [W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean), [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd), [P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works), [W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks), [Q3](learning-qa.md#q3-what-does-long-running-mean), [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd), [P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated)
 
 **Origin:** W4 and W5 produce raw events (CUDA event pairs, hook callbacks, peak-memory snapshots) and shove them into thread-safe queues. Something has to drain those queues, resolve still-pending GPU timings, aggregate within-step duplicates, and turn the result into typed rows. That layer is `samplers/`. It's the boundary between "timing primitives" (W4/W5) and "in-memory storage" (W7) — a small but load-bearing seam.
 
@@ -1233,7 +1233,7 @@ This is the most architecturally interesting sampler because it has to deal with
 
 **State (lines 27–34).** Inherits `BaseSampler` with `sampler_name="StepTimeSampler"` and `table_name="StepTimeTable"`. Holds a private `_pending: Deque[StepTimeBatch]`. The shared queue (the producer side, owned by W4's timing module) is read-only as far as the sampler is concerned; the sampler maintains its own ordered FIFO buffer of batches it has drained but not yet emitted.
 
-**Why the local FIFO?** Because GPU events from the most recent step might not have resolved yet. CUDA events are async — when a `torch.cuda.Event` is recorded on a stream, you can't read its elapsed time until the GPU has actually executed past that point. So the sampler can drain a step's batch from the queue but still need to wait one or more ticks before all events in it report a finite `gpu_time_ms`. The deque preserves step-arrival order so we never emit step `N+1` before step `N`. See [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) on why CUDA event resolution is async.
+**Why the local FIFO?** Because GPU events from the most recent step might not have resolved yet. CUDA events are async — when a `torch.cuda.Event` is recorded on a stream, you can't read its elapsed time until the GPU has actually executed past that point. So the sampler can drain a step's batch from the queue but still need to wait one or more ticks before all events in it report a finite `gpu_time_ms`. The deque preserves step-arrival order so we never emit step `N+1` before step `N`. See [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) on why CUDA event resolution is async.
 
 **`_ingest_queue` (lines 36–43).** Drains the global step-time queue (W4) into the local deque. Uses `append_queue_nowait_to_deque` from `utils.py` — a non-blocking drain that stops on `Empty`. The non-blocking part matters: if the runtime loop blocked on `Queue.get()` it would stall the whole sampler thread.
 
@@ -1267,11 +1267,11 @@ while self._pending:
 
 Note the `peek-then-pop` pattern: only resolve and emit the head of the queue. If the head step isn't ready yet, return immediately — even if later steps in the deque happen to be ready, we don't reorder. This guarantees the emitted stream is monotonically increasing in `step`, which downstream code (incremental sender, aggregator's per-step renderers) relies on.
 
-The whole `sample()` body is wrapped in `try/except` and any exception is logged. This is the fail-open principle the entire codebase enforces ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator) discusses it for the orchestrator level): a sampler bug must not break training.
+The whole `sample()` body is wrapped in `try/except` and any exception is logged. This is the fail-open principle the entire codebase enforces ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator) discusses it for the orchestrator level): a sampler bug must not break training.
 
 #### `step_memory_sampler.py` — drain-all variant (lines 1–68)
 
-Where `StepTimeSampler` has two-phase resolution (drain, then wait for GPU), `StepMemorySampler` is simpler because peak-memory readings (from W4's `step_memory.py` tracker) are synchronous — `torch.cuda.max_memory_allocated()` returns immediately ([P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)).
+Where `StepTimeSampler` has two-phase resolution (drain, then wait for GPU), `StepMemorySampler` is simpler because peak-memory readings (from W4's `step_memory.py` tracker) are synchronous — `torch.cuda.max_memory_allocated()` returns immediately ([P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)).
 
 `sample()` (lines 60–67) just drains the entire `step_memory_queue` and persists every event:
 
@@ -1300,7 +1300,7 @@ Memory is a capacity metric, so repeated observations within a step do not
 add together. We conservatively track the maximum observed value per layer.
 ```
 
-Compare to `layer_time_common.py`'s `aggregate_layer_time_payload`, which **sums** CPU time across calls. Time is additive, memory is a peak — different aggregation semantics for different physical quantities. This is the kind of distinction the schema layer makes explicit ([P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) discusses why per-layer memory is a "max" at all).
+Compare to `layer_time_common.py`'s `aggregate_layer_time_payload`, which **sums** CPU time across calls. Time is additive, memory is a peak — different aggregation semantics for different physical quantities. This is the kind of distinction the schema layer makes explicit ([P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) discusses why per-layer memory is a "max" at all).
 
 The four layer samplers (`layer_forward_time`, `layer_backward_time`, `layer_forward_memory`, `layer_backward_memory`) all follow this template. The time variants borrow `layer_time_common.py` (which mirrors `StepTimeSampler`'s try-resolve pattern because per-layer GPU events are also async-resolved); the memory variants borrow `layer_memory_common.py`.
 
@@ -1339,7 +1339,7 @@ No conditional gating. Every tick produces exactly one row. That's the time-base
 
 #### `process_sampler.py` — time-based with CUDA-fork-safety (lines 1–236)
 
-Same time-based shape as `SystemSampler` but with one wrinkle that's specific to PyTorch DDP: **don't touch CUDA before `dist.init_process_group()` has completed** ([Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). Initializing a CUDA context in the wrong window can hang or duplicate device contexts.
+Same time-based shape as `SystemSampler` but with one wrinkle that's specific to PyTorch DDP: **don't touch CUDA before `dist.init_process_group()` has completed** ([Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). Initializing a CUDA context in the wrong window can hang or duplicate device contexts.
 
 The defensive logic lives in three methods:
 
@@ -1347,7 +1347,7 @@ The defensive logic lives in three methods:
 - `_cuda_safe_to_touch` (lines 144–152) returns True only if either (a) we're not in DDP at all, or (b) `dist.is_available()` and `dist.is_initialized()`. The DDP detection comes from `runtime_context.py` reading `RANK/LOCAL_RANK/WORLD_SIZE` env vars (set by torchrun, see W1).
 - `_ensure_cuda_device` (lines 154–174) is the lazy initializer: the first time `_cuda_safe_to_touch()` returns True, this method picks the right device index (`local_rank` for DDP, 0 for single-process), calls `torch.cuda.set_device`, and caches the result. After that, subsequent ticks skip straight to sampling.
 
-The actual sampling at lines 176–204 wraps `torch.cuda.memory_allocated`, `memory_reserved`, and `get_device_properties(i).total_memory` in `with torch.cuda.device(i):` to be explicit about which device it's reading from. See [P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) on why these specific APIs.
+The actual sampling at lines 176–204 wraps `torch.cuda.memory_allocated`, `memory_reserved`, and `get_device_properties(i).total_memory` in `with torch.cuda.device(i):` to be explicit about which device it's reading from. See [P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) on why these specific APIs.
 
 The takeaway: time-based samplers can still need awareness of *when* in the process lifecycle they're running. `SystemSampler` queries NVML (a different driver-level path that doesn't go through PyTorch's CUDA context) so it has no such constraint. `ProcessSampler` queries `torch.cuda.*` so it has to wait until CUDA context creation is sanctioned.
 
@@ -1367,7 +1367,7 @@ Three primitives, all infrastructure-grade:
 
 - **`drain_queue_nowait(queue_obj, *, skip_none=True)`** (lines 19–44). Loops `queue.get_nowait()` until `Empty`, returning a list of items. Uses `get_nowait()` rather than `queue.empty()` because `empty()` has weak concurrency semantics under Python's GIL — between the empty check and the actual get, another producer could have inserted an item and you'd race. The pattern "try to pop; catch Empty as the loop terminator" is the idiomatic way to do non-blocking drains in Python's `queue` module.
 - **`append_queue_nowait_to_deque(...)`** (lines 47–57). Same drain logic but appending into a caller-owned deque instead of returning a list. This is what `StepTimeSampler._ingest_queue` uses to keep its private FIFO.
-- **`write_json_atomic`** (lines 60–85) and **`ensure_session_dir`** (lines 88–101). The same temp-file-then-`os.replace` pattern from W1 ([Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) on long-running services), used by the system manifest and a few other samplers that drop JSON sidecar files.
+- **`write_json_atomic`** (lines 60–85) and **`ensure_session_dir`** (lines 88–101). The same temp-file-then-`os.replace` pattern from W1 ([Q3](learning-qa.md#q3-what-does-long-running-mean) on long-running services), used by the system manifest and a few other samplers that drop JSON sidecar files.
 
 Nothing exotic, but every sampler depends on these helpers.
 
@@ -1420,14 +1420,14 @@ The schema modules walked through here are the *only* shared contract across tha
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) (long-running)** → every sampler's `sample()` is wrapped in broad `try/except`, log-and-continue. A sampler bug cannot crash the training process, by design.
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → event-driven samplers are the direct consumers of the queues populated by W4's patches and W5's hooks. The producer side is in-process monkey-patches; the consumer side is these samplers.
-- **[Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA context)** → `ProcessSampler._cuda_safe_to_touch()` and lazy `_ensure_cuda_device()` exist because touching `torch.cuda.*` before `dist.init_process_group()` completes can hang DDP. The sampler defers all CUDA reads until that's safe.
-- **[W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) (patches/timing)** → `StepTimeSampler._step_is_resolved` is the consumer of the CUDA-event-pair primitives W4 records. The async resolution pattern (`evt.try_resolve()`) is why this sampler needs a private FIFO.
-- **[W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks) (per-layer hooks)** → `Layer*MemorySampler` and `Layer*TimeSampler` drain queues populated by W5's forward/backward hooks. The `aggregate_layer_*_payload_*` helpers encode the difference between sum-over-calls (time) and max-over-calls (memory).
-- **[P33](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → `StepMemorySampler`'s `peak_allocated`/`peak_reserved` fields come from `torch.cuda.max_memory_allocated`/`max_memory_reserved`; both report caching-allocator state, not raw cuMemAlloc.
-- **[P51](traceml_pytorch_qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) (`torch.cuda.*` stability)** → `ProcessSampler` is the file most exposed to `torch.cuda.*` API churn (`set_device`, `device(i)`, `memory_allocated`, `memory_reserved`, `get_device_properties`, `device_count`, `is_available`). If those signatures change across PyTorch releases, this sampler is the one to update.
-- **[P52](traceml_pytorch_qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) (per-layer memory)** → `aggregate_layer_memory_payload_max` is the canonical reason TraceML's per-layer memory is a max-over-calls. Repeated forward passes within a step don't accumulate memory — the activation buffer is reused.
+- **[Q3](learning-qa.md#q3-what-does-long-running-mean) (long-running)** → every sampler's `sample()` is wrapped in broad `try/except`, log-and-continue. A sampler bug cannot crash the training process, by design.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → event-driven samplers are the direct consumers of the queues populated by W4's patches and W5's hooks. The producer side is in-process monkey-patches; the consumer side is these samplers.
+- **[Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA context)** → `ProcessSampler._cuda_safe_to_touch()` and lazy `_ensure_cuda_device()` exist because touching `torch.cuda.*` before `dist.init_process_group()` completes can hang DDP. The sampler defers all CUDA reads until that's safe.
+- **[W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) (patches/timing)** → `StepTimeSampler._step_is_resolved` is the consumer of the CUDA-event-pair primitives W4 records. The async resolution pattern (`evt.try_resolve()`) is why this sampler needs a private FIFO.
+- **[W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks) (per-layer hooks)** → `Layer*MemorySampler` and `Layer*TimeSampler` drain queues populated by W5's forward/backward hooks. The `aggregate_layer_*_payload_*` helpers encode the difference between sum-over-calls (time) and max-over-calls (memory).
+- **[P33](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) (caching allocator)** → `StepMemorySampler`'s `peak_allocated`/`peak_reserved` fields come from `torch.cuda.max_memory_allocated`/`max_memory_reserved`; both report caching-allocator state, not raw cuMemAlloc.
+- **[P51](pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions-relevant-to-the-pytorch-coupling-constraint-in-claudemd) (`torch.cuda.*` stability)** → `ProcessSampler` is the file most exposed to `torch.cuda.*` API churn (`set_device`, `device(i)`, `memory_allocated`, `memory_reserved`, `get_device_properties`, `device_count`, `is_available`). If those signatures change across PyTorch releases, this sampler is the one to update.
+- **[P52](pytorch-qa.md#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated) (per-layer memory)** → `aggregate_layer_memory_payload_max` is the canonical reason TraceML's per-layer memory is a max-over-calls. Repeated forward passes within a step don't accumulate memory — the activation buffer is reused.
 
 ### Concepts introduced
 
@@ -1439,26 +1439,26 @@ Sampler base class as capability provider (DB + sender + logger + table), event-
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/database/database.py](traceml/src/traceml/database/database.py) (222 lines)
-- [traceml/src/traceml/database/database_sender.py](traceml/src/traceml/database/database_sender.py) (123 lines)
-- [traceml/src/traceml/database/database_writer.py](traceml/src/traceml/database/database_writer.py) (128 lines)
-- [traceml/src/traceml/database/remote_database_store.py](traceml/src/traceml/database/remote_database_store.py) (229 lines)
+- [traceml/src/traceml/database/database.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database.py) (222 lines)
+- [traceml/src/traceml/database/database_sender.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database_sender.py) (123 lines)
+- [traceml/src/traceml/database/database_writer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database_writer.py) (128 lines)
+- [traceml/src/traceml/database/remote_database_store.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/remote_database_store.py) (229 lines)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works), [W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows), [Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean), [Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank), [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works), [W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows), [Q2](learning-qa.md#q2-what-is-server-side-vs-user-side), [Q3](learning-qa.md#q3-what-does-long-running-mean), [Q4](learning-qa.md#q4-what-is-a-gpu-rank), [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)
 
-**Origin:** With samplers from [W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows) emitting structured rows, the natural next question is "where do those rows live, and how do they leave this process without blocking training?" That's exactly what this directory answers.
+**Origin:** With samplers from [W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows) emitting structured rows, the natural next question is "where do those rows live, and how do they leave this process without blocking training?" That's exactly what this directory answers.
 
 ### Short answer
 
-This directory is the boundary between "telemetry produced inside the training process" and "telemetry consumed by the aggregator." `Database` is a bounded, append-only deque-per-table store that samplers write into in O(1). `DBIncrementalSender` ships only newly-appended rows over TCP, using a monotonic append counter (not array indices) to be safe under deque eviction. `DatabaseWriter` does the same delta logic but to a per-rank MessagePack file on disk. `RemoteDBStore` is the aggregator-side mirror — it holds one `Database` per `(rank, sampler)` so each rank's data stays separate and the same renderers can read either side of the wire. This is the **Queue** block in the architecture diagram on the rank side, and the in-memory tier of the **SQLite Table** block on the aggregator side (the actual SQLite write happens in [W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)).
+This directory is the boundary between "telemetry produced inside the training process" and "telemetry consumed by the aggregator." `Database` is a bounded, append-only deque-per-table store that samplers write into in O(1). `DBIncrementalSender` ships only newly-appended rows over TCP, using a monotonic append counter (not array indices) to be safe under deque eviction. `DatabaseWriter` does the same delta logic but to a per-rank MessagePack file on disk. `RemoteDBStore` is the aggregator-side mirror — it holds one `Database` per `(rank, sampler)` so each rank's data stays separate and the same renderers can read either side of the wire. This is the **Queue** block in the architecture diagram on the rank side, and the in-memory tier of the **SQLite Table** block on the aggregator side (the actual SQLite write happens in [W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)).
 
 ### Long answer
 
 #### `database.py`: the bounded deque-per-table store (lines 1–222)
 
-The whole abstraction is a dictionary of `collections.deque(maxlen=N)`. Each sampler owns one `Database`; each "table" inside it is a single deque. There is no schema enforcement, no SQL, no transactions — rows are arbitrary Python objects (typically dicts produced by the samplers in [W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)).
+The whole abstraction is a dictionary of `collections.deque(maxlen=N)`. Each sampler owns one `Database`; each "table" inside it is a single deque. There is no schema enforcement, no SQL, no transactions — rows are arbitrary Python objects (typically dicts produced by the samplers in [W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)).
 
-**Why a deque and not a list (lines 23, 30, 93).** A bounded deque gives O(1) append *and* O(1) eviction of the oldest record. Python lists give you O(1) append amortized but O(N) eviction from the front (`list.pop(0)` shifts everything). For a long-running training job ([Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) — runs lasting hours/days) this matters: at 1 Hz sampling and 10 tables, you get 36k rows per hour per sampler. Without a hard ceiling, memory grows linearly with wall-clock time and eventually OOMs the training process. `DEFAULT_MAX_ROWS = 3000` (line 30) caps each table at ~50 minutes of 1 Hz data; older rows fall off the back, but the sender/writer ship them to durable storage well before that happens.
+**Why a deque and not a list (lines 23, 30, 93).** A bounded deque gives O(1) append *and* O(1) eviction of the oldest record. Python lists give you O(1) append amortized but O(N) eviction from the front (`list.pop(0)` shifts everything). For a long-running training job ([Q3](learning-qa.md#q3-what-does-long-running-mean) — runs lasting hours/days) this matters: at 1 Hz sampling and 10 tables, you get 36k rows per hour per sampler. Without a hard ceiling, memory grows linearly with wall-clock time and eventually OOMs the training process. `DEFAULT_MAX_ROWS = 3000` (line 30) caps each table at ~50 minutes of 1 Hz data; older rows fall off the back, but the sender/writer ship them to durable storage well before that happens.
 
 **The append-counter trick (lines 64–66, 140, 202–211).** This is the single most important design decision in the file:
 
@@ -1493,9 +1493,9 @@ else:
     new_rows = [rows[i] for i in range(n - new_count, n)]
 ```
 
-The `new_count >= n` branch handles the eviction case: if we appended 500 rows since last flush but the deque only holds 300, then 200 were evicted before we could ship them — drop those on the floor and send what's still in memory. This is the classic "slow consumer" tradeoff: telemetry is best-effort, not gap-free. If the network is too slow to keep up with the producer, you lose old samples rather than blocking training. Fail-open ([Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side) — server-side outages must never block user-side training).
+The `new_count >= n` branch handles the eviction case: if we appended 500 rows since last flush but the deque only holds 300, then 200 were evicted before we could ship them — drop those on the floor and send what's still in memory. This is the classic "slow consumer" tradeoff: telemetry is best-effort, not gap-free. If the network is too slow to keep up with the producer, you lose old samples rather than blocking training. Fail-open ([Q2](learning-qa.md#q2-what-is-server-side-vs-user-side) — server-side outages must never block user-side training).
 
-**The cursor advances even on failure (lines 98, 110–122).** `_last_sent_seq[table_name] = total` runs *inside* `collect_payload`, before the actual `sender.send`. So if the TCP send raises, the rows are already considered "sent" and won't be retransmitted. This is intentional: retrying telemetry indefinitely could wedge the runtime thread, and old telemetry is rarely worth the cost of a stall. The exception is logged via `get_error_logger` and execution continues — same fail-open pattern as the patches in [W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works).
+**The cursor advances even on failure (lines 98, 110–122).** `_last_sent_seq[table_name] = total` runs *inside* `collect_payload`, before the actual `sender.send`. So if the TCP send raises, the rows are already considered "sent" and won't be retransmitted. This is intentional: retrying telemetry indefinitely could wedge the runtime thread, and old telemetry is rarely worth the cost of a stall. The exception is logged via `get_error_logger` and execution continues — same fail-open pattern as the patches in [W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works).
 
 **The `max_rows_per_flush` knob (lines 51, 88–89).** A throttle: even if 5000 rows accumulated since last flush, set this to 100 and only the newest 100 are shipped per call. The default `-1` means "send everything." Useful when you want bounded per-flush wire bytes regardless of how slow the consumer side is.
 
@@ -1510,11 +1510,11 @@ The `new_count >= n` branch handles the eviction case: if we appended 500 rows s
 }
 ```
 
-Note `rank` is carried at the payload level, not implicit in the connection. This matches DDP's mental model ([Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank)): the aggregator might receive multiple TCP connections (one per rank) on the same port, and each payload self-identifies. The `RemoteDBStore` reads this field to route the rows to the correct `(rank, sampler)` bucket. The transport layer itself ([W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)) is rank-agnostic — it just moves opaque bytes.
+Note `rank` is carried at the payload level, not implicit in the connection. This matches DDP's mental model ([Q4](learning-qa.md#q4-what-is-a-gpu-rank)): the aggregator might receive multiple TCP connections (one per rank) on the same port, and each payload self-identifies. The `RemoteDBStore` reads this field to route the rows to the correct `(rank, sampler)` bucket. The transport layer itself ([W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)) is rank-agnostic — it just moves opaque bytes.
 
 #### `database_writer.py`: same delta logic, to disk (lines 1–128)
 
-`DatabaseWriter` is the on-rank persistence path — independent of the network. Every rank writes its own MessagePack files to `<logs_dir>/<session_id>/data/rank_<N>/<sampler>/<table>.msgpack` (lines 46, 68–74). This survives even if the aggregator dies; you can re-derive everything offline from these files using the `inspect` subcommand from [W1](#w1-clipy--top-level-launcher-and-process-orchestrator).
+`DatabaseWriter` is the on-rank persistence path — independent of the network. Every rank writes its own MessagePack files to `<logs_dir>/<session_id>/data/rank_<N>/<sampler>/<table>.msgpack` (lines 46, 68–74). This survives even if the aggregator dies; you can re-derive everything offline from these files using the `inspect` subcommand from [W1](#w1-clipy-top-level-launcher-and-process-orchestrator).
 
 **Length-prefixed framing (lines 121–125).**
 
@@ -1523,13 +1523,13 @@ f.write(struct.pack("!I", len(payload)))
 f.write(payload)
 ```
 
-A 4-byte big-endian length prefix per record. This is the exact same framing the inspect command in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) reads back, and it's the same shape as the TCP framing in [W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection). One framing convention, three places it's used: TCP wire, on-disk log, in-process inspect. Reusing the format means the same `msgspec.msgpack.Decoder` reads any of them.
+A 4-byte big-endian length prefix per record. This is the exact same framing the inspect command in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) reads back, and it's the same shape as the TCP framing in [W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection). One framing convention, three places it's used: TCP wire, on-disk log, in-process inspect. Reusing the format means the same `msgspec.msgpack.Decoder` reads any of them.
 
 **Throttling I/O (lines 60–62, 94–96).** `flush_every=100` means actual disk writes happen on every 100th call to `flush()`. If `flush()` is called per-step at high QPS, you'd burn syscalls writing single rows. Batching by 100 keeps the per-step overhead negligible while keeping data fresh enough for live debugging.
 
 **Append-only on disk + delta-only in code (lines 100–127).** Same `total - last_seq` arithmetic as the sender, but the consumer is `open(path, "ab")` instead of a TCP socket. `"ab"` is binary append mode — the file pointer goes to EOF and writes there, never rewriting earlier bytes. Crash-safe by construction: if the process is SIGKILLed mid-write, the worst case is one truncated record at the tail (which the length prefix lets the reader detect and skip). The bulk of the file is intact.
 
-**DDP-safe path layout (lines 12–25, 64–74).** `_rank_suffix()` uses `LOCAL_RANK` from `get_ddp_info()` to put each rank's files in its own directory. Two ranks on the same node never write to the same file → no `O_APPEND` race ([Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank)). The `TODO` at line 18 is honest about a known limitation: cross-node DDP would need global `RANK` instead, since two nodes could both have `LOCAL_RANK=0`.
+**DDP-safe path layout (lines 12–25, 64–74).** `_rank_suffix()` uses `LOCAL_RANK` from `get_ddp_info()` to put each rank's files in its own directory. Two ranks on the same node never write to the same file → no `O_APPEND` race ([Q4](learning-qa.md#q4-what-is-a-gpu-rank)). The `TODO` at line 18 is honest about a known limitation: cross-node DDP would need global `RANK` instead, since two nodes could both have `LOCAL_RANK=0`.
 
 **The `enable_logging` gate (line 91).** Top-line check: if disk logging is disabled (e.g., the user wants live UI only, no on-disk artifacts), the entire flush is a no-op. The counter doesn't even advance. This keeps the writer's overhead at literally a single boolean check when disabled.
 
@@ -1544,28 +1544,28 @@ self._dbs: Dict[int, Dict[str, Database]] = {}
 self._last_seen: Dict[int, float] = {}
 ```
 
-`self._dbs[rank][sampler_name]` returns the bounded `Database` for that pair. **It reuses the exact same `Database` class** the rank side uses — same deque, same `add_record`, same append counter. That symmetry is what makes the renderers in [W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql) framework-agnostic: they read from a `Database`, and they don't care whether it was populated by a local sampler or by network ingestion.
+`self._dbs[rank][sampler_name]` returns the bounded `Database` for that pair. **It reuses the exact same `Database` class** the rank side uses — same deque, same `add_record`, same append counter. That symmetry is what makes the renderers in [W10](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql) framework-agnostic: they read from a `Database`, and they don't care whether it was populated by a local sampler or by network ingestion.
 
-**Lazy `(rank, sampler)` creation (lines 61–88).** `_get_or_create_db` creates the inner dict on first sight of a new rank, then creates the `Database` on first sight of a new sampler from that rank. So the aggregator doesn't need to know in advance how many ranks will connect or which samplers each rank will run — the topology is discovered dynamically from incoming payloads. This matches how torchrun launches ranks ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator)): the aggregator starts before any rank, and ranks connect whenever they finish their import phase.
+**Lazy `(rank, sampler)` creation (lines 61–88).** `_get_or_create_db` creates the inner dict on first sight of a new rank, then creates the `Database` on first sight of a new sampler from that rank. So the aggregator doesn't need to know in advance how many ranks will connect or which samplers each rank will run — the topology is discovered dynamically from incoming payloads. This matches how torchrun launches ranks ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator)): the aggregator starts before any rank, and ranks connect whenever they finish their import phase.
 
 **`ingest()` accepts both batch and single (lines 90–114).** Two payload shapes: a single dict (legacy `TCPClient.send()`) or a list of dicts (newer `TCPClient.send_batch()` for amortizing send overhead). The branching is one `isinstance(message, list)` check; both paths funnel into `_ingest_one`. This is the kind of compatibility shim that's worth maintaining cheaply because it lets the wire format evolve without breaking older client builds — relevant given the backward-compat constraint in CLAUDE.md (existing v0.2.3 users).
 
-**Reconstructing rows table-by-table (lines 116–173).** `_ingest_one` reads `rank` and `sampler` from the payload, looks up (or creates) the right `Database`, then loops over the `tables` dict and re-`add_record`s each row. The append counter on the aggregator side goes up monotonically too, which means a downstream consumer (e.g., the SQLite writer in [W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)) can use the same `total - last_seq` trick to drain the in-memory store into durable storage without re-reading the same rows. **The append-counter pattern is the protocol of this whole subsystem** — used in 4 distinct places, top-to-bottom.
+**Reconstructing rows table-by-table (lines 116–173).** `_ingest_one` reads `rank` and `sampler` from the payload, looks up (or creates) the right `Database`, then loops over the `tables` dict and re-`add_record`s each row. The append counter on the aggregator side goes up monotonically too, which means a downstream consumer (e.g., the SQLite writer in [W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)) can use the same `total - last_seq` trick to drain the in-memory store into durable storage without re-reading the same rows. **The append-counter pattern is the protocol of this whole subsystem** — used in 4 distinct places, top-to-bottom.
 
-**`last_seen` for rank liveness (lines 152–153, 204–218).** Every ingestion stamps `_last_seen[rank] = time.time()`. Renderers use this to surface "rank 3 hasn't reported in 8s" warnings — useful if a worker hangs or its NCCL all-reduce stalls ([Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)). Note the deliberate `0.0` default in `last_seen` (line 218) instead of raising — callers can do liveness math without a try/except.
+**`last_seen` for rank liveness (lines 152–153, 204–218).** Every ingestion stamps `_last_seen[rank] = time.time()`. Renderers use this to surface "rank 3 hasn't reported in 8s" warnings — useful if a worker hangs or its NCCL all-reduce stalls ([Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)). Note the deliberate `0.0` default in `last_seen` (line 218) instead of raising — callers can do liveness math without a try/except.
 
-**Single-threaded by contract (lines 28–31).** No locking. The docstring is explicit: "ingestion happens on a single runtime thread on rank-0." The TCP server in [W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection) serializes all incoming frames onto one ingest thread, so the store doesn't need its own mutex. If that invariant ever changes, this is the file that needs revisiting first.
+**Single-threaded by contract (lines 28–31).** No locking. The docstring is explicit: "ingestion happens on a single runtime thread on rank-0." The TCP server in [W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection) serializes all incoming frames onto one ingest thread, so the store doesn't need its own mutex. If that invariant ever changes, this is the file that needs revisiting first.
 
-**`max_rows=500` default vs `3000` on the rank side (line 40 here, line 30 in `database.py`).** The aggregator-side cap is lower because it's a live-display buffer, not a durable history — durable history lives in SQLite (see [W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)). Rendered terminal panels rarely show more than the last few hundred points anyway, so 500 is plenty for "what's happening right now," and N ranks × M samplers × 500 rows stays well within memory budget.
+**`max_rows=500` default vs `3000` on the rank side (line 40 here, line 30 in `database.py`).** The aggregator-side cap is lower because it's a live-display buffer, not a durable history — durable history lives in SQLite (see [W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)). Rendered terminal panels rarely show more than the last few hundred points anyway, so 500 is plenty for "what's happening right now," and N ranks × M samplers × 500 rows stays well within memory budget.
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → `Database` + `DatabaseWriter` + `DBIncrementalSender` are user-side (in-training-process, every rank). `RemoteDBStore` is server-side (aggregator process, rank-0 only). Same `Database` class on both sides; the asymmetry is which one ingests via TCP vs which one ingests via samplers.
-- **[Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) (long-running)** → bounded `deque(maxlen=...)` is the central concession to long-running. Without it, memory grows linearly with wall-clock and OOMs the training job. Append-counter survives eviction so consumers stay correct even when older data has been dropped.
-- **[Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `RemoteDBStore` keys by rank, `DatabaseWriter` puts each rank's files in `rank_<N>/`, `DBIncrementalSender` puts the rank into the payload. Rank is a first-class concept everywhere telemetry can collide.
-- **[Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP)** → `DBIncrementalSender.flush()` is the upstream half of the TCP pipeline; the actual socket lives in transport ([W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)). The 4-byte length-prefix framing in `DatabaseWriter` is the same framing TCP uses — one wire format, multiple destinations.
-- **[W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows) (samplers + schemas)** → samplers are the producers; this directory is the shared buffer they all write into. The schemas are arbitrary dicts to the database (no enforcement here); structure lives in the sampler-side dataclasses.
-- **[W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) (fail-open philosophy)** → `DBIncrementalSender` advances its cursor before send and swallows send exceptions; `DatabaseWriter` does nothing if `enable_logging` is off; deque eviction silently drops old rows rather than blocking the producer. Telemetry never blocks training, full stop.
+- **[Q2](learning-qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → `Database` + `DatabaseWriter` + `DBIncrementalSender` are user-side (in-training-process, every rank). `RemoteDBStore` is server-side (aggregator process, rank-0 only). Same `Database` class on both sides; the asymmetry is which one ingests via TCP vs which one ingests via samplers.
+- **[Q3](learning-qa.md#q3-what-does-long-running-mean) (long-running)** → bounded `deque(maxlen=...)` is the central concession to long-running. Without it, memory grows linearly with wall-clock and OOMs the training job. Append-counter survives eviction so consumers stay correct even when older data has been dropped.
+- **[Q4](learning-qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `RemoteDBStore` keys by rank, `DatabaseWriter` puts each rank's files in `rank_<N>/`, `DBIncrementalSender` puts the rank into the payload. Rank is a first-class concept everywhere telemetry can collide.
+- **[Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP)** → `DBIncrementalSender.flush()` is the upstream half of the TCP pipeline; the actual socket lives in transport ([W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)). The 4-byte length-prefix framing in `DatabaseWriter` is the same framing TCP uses — one wire format, multiple destinations.
+- **[W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows) (samplers + schemas)** → samplers are the producers; this directory is the shared buffer they all write into. The schemas are arbitrary dicts to the database (no enforcement here); structure lives in the sampler-side dataclasses.
+- **[W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) (fail-open philosophy)** → `DBIncrementalSender` advances its cursor before send and swallows send exceptions; `DatabaseWriter` does nothing if `enable_logging` is off; deque eviction silently drops old rows rather than blocking the producer. Telemetry never blocks training, full stop.
 
 ### Concepts introduced
 
@@ -1577,24 +1577,24 @@ Bounded deque-per-table store, monotonic append counter (eviction-safe new-row d
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/transport/tcp_transport.py](traceml/src/traceml/transport/tcp_transport.py) (260 lines)
-- [traceml/src/traceml/transport/distributed.py](traceml/src/traceml/transport/distributed.py) (42 lines)
+- [traceml/src/traceml/transport/tcp_transport.py](https://github.com/Pendu/traceml/blob/main/src/traceml/transport/tcp_transport.py) (260 lines)
+- [traceml/src/traceml/transport/distributed.py](https://github.com/Pendu/traceml/blob/main/src/traceml/transport/distributed.py) (42 lines)
 
-**Reads cleanly with:** [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets), [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank), [Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe), [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier), [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)
+**Reads cleanly with:** [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets), [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q4](learning-qa.md#q4-what-is-a-gpu-rank), [Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe), [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier), [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)
 
 **Origin:** Q5 and Q10 cover sockets and TCP at the conceptual level; this is where the abstractions become two real classes — `TCPServer` on the aggregator, `TCPClient` on each rank — with explicit framing, threading, and fail-open error policy. Plus the small but load-bearing `distributed.py` that answers "which rank am I?" without ever calling into NCCL.
 
 ### Short answer
 
-`tcp_transport.py` is the wire between training ranks ([W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session)) and the aggregator ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator) spawned it, W9 will own it). The aggregator runs a `TCPServer` that does an accept loop in a background thread, spawns one handler thread per connection, and drops decoded messages into a queue. Each rank constructs a `TCPClient` that lazy-connects on first send, encodes payloads with msgspec's MessagePack, prepends a 4-byte big-endian length header, and writes header + body in one `sendall`. Both sides are best-effort: send failures close the socket and the next tick reconnects; receive errors close the connection but keep the server alive. `distributed.py` is the rank-detection oracle — it reads `LOCAL_RANK` / `RANK` / `WORLD_SIZE` (set by torchrun) and decides whether this Python process is in a distributed group, without ever touching CUDA or NCCL.
+`tcp_transport.py` is the wire between training ranks ([W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session)) and the aggregator ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator) spawned it, W9 will own it). The aggregator runs a `TCPServer` that does an accept loop in a background thread, spawns one handler thread per connection, and drops decoded messages into a queue. Each rank constructs a `TCPClient` that lazy-connects on first send, encodes payloads with msgspec's MessagePack, prepends a 4-byte big-endian length header, and writes header + body in one `sendall`. Both sides are best-effort: send failures close the socket and the next tick reconnects; receive errors close the connection but keep the server alive. `distributed.py` is the rank-detection oracle — it reads `LOCAL_RANK` / `RANK` / `WORLD_SIZE` (set by torchrun) and decides whether this Python process is in a distributed group, without ever touching CUDA or NCCL.
 
 ### Long answer
 
-Two files, two concerns: (1) how bytes get from rank N to the aggregator, (2) how the rank knows it is rank N. They are deliberately decoupled — the transport doesn't know about DDP, and the rank detector doesn't know about sockets. The integration point is upstream, in the runtime ([W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session)), which calls `get_ddp_info()` to decide *whether* to instantiate a `TCPClient` and to stamp every payload with a rank field.
+Two files, two concerns: (1) how bytes get from rank N to the aggregator, (2) how the rank knows it is rank N. They are deliberately decoupled — the transport doesn't know about DDP, and the rank detector doesn't know about sockets. The integration point is upstream, in the runtime ([W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session)), which calls `get_ddp_info()` to decide *whether* to instantiate a `TCPClient` and to stamp every payload with a rank field.
 
 #### `tcp_transport.py` — config (lines 13–18)
 
-`TCPConfig` is a frozen dataclass: host (`127.0.0.1`), port (`29765`), `backlog=16` (the kernel's pending-connections queue depth — how many concurrent `connect`s can land before the server `accept`s them; with WORLD_SIZE up to 8 this has slack), and `recv_buf=65536` (the chunk size each `recv` call requests). Localhost-only is a deliberate scope choice: TraceML aggregator and ranks always live on the same node ([Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)), so we never expose a network listener. No auth, no TLS, no reachability beyond loopback.
+`TCPConfig` is a frozen dataclass: host (`127.0.0.1`), port (`29765`), `backlog=16` (the kernel's pending-connections queue depth — how many concurrent `connect`s can land before the server `accept`s them; with WORLD_SIZE up to 8 this has slack), and `recv_buf=65536` (the chunk size each `recv` call requests). Localhost-only is a deliberate scope choice: TraceML aggregator and ranks always live on the same node ([Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)), so we never expose a network listener. No auth, no TLS, no reachability beyond loopback.
 
 Frozen dataclass means the config object hashes and won't be mutated — both server and client receive the same `TCPConfig` instance and can be sure host/port don't drift mid-run.
 
@@ -1614,11 +1614,11 @@ self._sock.listen(self.cfg.backlog)
 
 Five things worth understanding:
 
-- `AF_INET` + `SOCK_STREAM` = IPv4 TCP. Concrete kernel object; from this point onwards, the file descriptor is what the kernel tracks ([Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets)).
+- `AF_INET` + `SOCK_STREAM` = IPv4 TCP. Concrete kernel object; from this point onwards, the file descriptor is what the kernel tracks ([Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets)).
 - `SO_REUSEADDR` lets us re-bind the same `(host, port)` even if the previous run's socket is still in `TIME_WAIT` (the 60-second cooldown after close, per RFC). Without this, restarting TraceML quickly hits "address already in use."
 - `SO_REUSEPORT` is the more aggressive sibling: it allows multiple sockets to bind to the same port simultaneously. Belt-and-suspenders for fast restarts; not strictly needed but doesn't hurt on Linux.
 - `bind` claims the port; `listen` flips the socket into server mode and tells the kernel to accept incoming connections up to `backlog`-deep.
-- After `listen` returns, the CLI's `wait_for_tcp_listen` probe in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) starts succeeding — that's the synchronization point between aggregator startup and rank launch.
+- After `listen` returns, the CLI's `wait_for_tcp_listen` probe in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) starts succeeding — that's the synchronization point between aggregator startup and rank launch.
 
 Then a daemon thread fires up `_run`. Daemon = doesn't block process exit; if the main aggregator thread dies, the listener doesn't keep Python alive on its own. This pairs with `_stop_event` for graceful shutdown.
 
@@ -1651,7 +1651,7 @@ The 1-second `settimeout` on `conn` is what makes graceful shutdown work: withou
 
 #### `tcp_transport.py` — frame draining (lines 112–138)
 
-This is the heart of the framing protocol — and the part that's easy to get wrong. TCP is a *stream* ([Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)): the kernel hands you bytes, not messages. One `send` of a 1000-byte payload can land as one `recv` of 1000 bytes, or two `recv`s of 600+400, or a `recv` of 1500 that contains the next message's first 500 bytes. **Framing is the receiver's responsibility.**
+This is the heart of the framing protocol — and the part that's easy to get wrong. TCP is a *stream* ([Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)): the kernel hands you bytes, not messages. One `send` of a 1000-byte payload can land as one `recv` of 1000 bytes, or two `recv`s of 600+400, or a `recv` of 1500 that contains the next message's first 500 bytes. **Framing is the receiver's responsibility.**
 
 TraceML's framing: `[4-byte big-endian length][N bytes of msgpack body]`. The `!I` format string in `struct.unpack` means network byte order (big-endian) unsigned 32-bit int. Big-endian is the network convention even on little-endian hardware so that two hosts with different native byte orders can interoperate (irrelevant here since we're loopback-only, but no reason to deviate from the convention).
 
@@ -1677,10 +1677,10 @@ Why both APIs? The aggregator can drive itself two ways: (a) "tick every 100 ms 
 
 The client side is simpler because it only does one thing: encode and send. No accept loop, no per-connection state machine, no decoder. But it has its own concerns:
 
-- **Lazy connect** (`_ensure_connected`, lines 238–250). The client doesn't connect in `__init__`. It connects on the first `send`. Why: at runtime startup, the aggregator might not be listening yet despite the CLI's readiness probe (race conditions, restarts). Lazy connect lets the rank survive a temporarily-unreachable aggregator — first send fails silently, subsequent sends retry. This is the **fail-open** semantics from [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping): telemetry loss is preferred over training failure.
+- **Lazy connect** (`_ensure_connected`, lines 238–250). The client doesn't connect in `__init__`. It connects on the first `send`. Why: at runtime startup, the aggregator might not be listening yet despite the CLI's readiness probe (race conditions, restarts). Lazy connect lets the rank survive a temporarily-unreachable aggregator — first send fails silently, subsequent sends retry. This is the **fail-open** semantics from [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping): telemetry loss is preferred over training failure.
 - **Double-checked locking** (lines 239–244). The fast path checks `self._connected` without holding the lock; only if it looks unconnected do we acquire and re-check. This avoids serializing every `send` through the lock just to check a boolean. Standard pattern in concurrent code; works here because Python attribute reads are atomic w.r.t. the GIL.
 - **`settimeout(1.0)`** on connect — if the aggregator port is silent (filtered, or process gone), connect bails after a second instead of hanging. Crucial for fail-open: a hanging connect would freeze the rank's runtime thread.
-- **No reconnect logic** in the client itself — when `send` catches an exception, it calls `_close()`, which clears the connected flag. The next `send` lazy-connects again. So reconnect is implicit, driven by the next telemetry tick from [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)'s sender.
+- **No reconnect logic** in the client itself — when `send` catches an exception, it calls `_close()`, which clears the connected flag. The next `send` lazy-connects again. So reconnect is implicit, driven by the next telemetry tick from [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)'s sender.
 
 #### `tcp_transport.py` — `send` and `send_batch` (lines 192–233)
 
@@ -1695,7 +1695,7 @@ Three details that matter:
 
 - `sendall` (vs `send`) loops internally until every byte is written or an error fires. Plain `send` may write *some* of the bytes and return the count — easy to miss; framed protocols always use `sendall`.
 - `header + data` is concatenated **before** the lock is taken, so the lock is held only for the syscall itself. Concatenating creates a copy, but the lock-held window is what matters — the header is 4 bytes, and the kernel buffer is large enough that `sendall` is usually one syscall.
-- The lock serializes concurrent `send` calls from *different threads on the same client*. The runtime in [W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session) is single-threaded for sending today, but step decorators or future async senders could share a `TCPClient`. Without the lock, two interleaved sends would scramble the byte stream — a header from one and body from another, framing destroyed.
+- The lock serializes concurrent `send` calls from *different threads on the same client*. The runtime in [W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session) is single-threaded for sending today, but step decorators or future async senders could share a `TCPClient`. Without the lock, two interleaved sends would scramble the byte stream — a header from one and body from another, framing destroyed.
 
 `send_batch` (lines 206–233) is an optimization: encode N payloads as a single msgpack list and write one frame. Comment line 215 says the aggregator's `RemoteDBStore.ingest()` detects the list envelope and dispatches each item — so the wire shows one frame, but the aggregator-side semantics are "N rows ingested." This collapses N syscalls into 1 when the sender has a backlog (e.g., samplers produced 50 rows in the last tick). Pure throughput win at the cost of a tiny bit of latency (the rows leave together rather than as soon as each is produced).
 
@@ -1709,7 +1709,7 @@ Tiny but architectural. Three env vars do the work:
 - `RANK` — the global rank across all nodes (0…N-1 across the whole job). Same as `LOCAL_RANK` on single-node jobs.
 - `WORLD_SIZE` — total number of processes in the job.
 
-These env vars are how torchrun communicates DDP membership to workers — set in the parent before `execve` ([Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank)), inherited by the child Python process, read by `os.environ` here. No shared memory, no NCCL handshake needed to *know* you're rank N — that information is purely environmental.
+These env vars are how torchrun communicates DDP membership to workers — set in the parent before `execve` ([Q4](learning-qa.md#q4-what-is-a-gpu-rank)), inherited by the child Python process, read by `os.environ` here. No shared memory, no NCCL handshake needed to *know* you're rank N — that information is purely environmental.
 
 The detection is intentionally generous (lines 22–28):
 
@@ -1731,7 +1731,7 @@ The fallback for `local_rank` (lines 31–40) handles `mp.spawn`-style launchers
 
 #### Why the transport is independent of NCCL
 
-Worth pulling out explicitly because it's a non-obvious robustness property. NCCL ([Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) is PyTorch's GPU-to-GPU collective library — it owns the all-reduce that ties DDP together, and it's notoriously fork-unsafe ([Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). If NCCL hangs (a common failure mode: one rank dies, the others block on all-reduce forever), it can take the whole training job down.
+Worth pulling out explicitly because it's a non-obvious robustness property. NCCL ([Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) is PyTorch's GPU-to-GPU collective library — it owns the all-reduce that ties DDP together, and it's notoriously fork-unsafe ([Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). If NCCL hangs (a common failure mode: one rank dies, the others block on all-reduce forever), it can take the whole training job down.
 
 TraceML's transport doesn't use NCCL. It uses raw POSIX TCP sockets over loopback. That means:
 
@@ -1756,14 +1756,14 @@ The `_lock` in `TCPClient` is precautionary — there's no current code path wit
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) (sockets, fds, threading, signals)** → every primitive in this file: `socket.socket`, file descriptors closed on shutdown, daemon threads as kernel-scheduled execution units, the "close fd to wake blocked syscall" idiom.
-- **[Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → `bind` claims port 29765, `listen` flips to server mode, `connect` from rank, `recv`/`sendall` semantics. Big-endian length prefix is the canonical framing pattern that compensates for TCP being a stream-not-message protocol.
-- **[Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `get_ddp_info()` is the literal mechanism by which a Python process learns its rank: read `LOCAL_RANK`/`RANK` from env vars set by torchrun.
-- **[Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → this transport is CUDA-free. No CUDA context to corrupt; survives fork/exec/NCCL deadlock.
-- **[Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) (NCCL)** → independence from NCCL is the architectural property that lets TraceML keep streaming telemetry even when collective ops hang. Diagnostic plane vs data plane separation.
-- **[W1](#w1-clipy--top-level-launcher-and-process-orchestrator) (CLI)** → CLI's `wait_for_tcp_listen` probe waits for `TCPServer.start()` to reach `socket.listen` before launching ranks; CLI passes `TRACEML_TCP_HOST`/`TRACEML_TCP_PORT` through env vars that both server and clients read.
-- **[W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session) (per-rank runtime)** → consumer of `TCPClient`; calls `get_ddp_info()` to decide whether to attach the client and to stamp every payload with a rank field.
-- **[W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping) (DB + sender)** → the sender batches new rows from the bounded in-memory database and feeds them into `send_batch`. The fail-open contract here is what lets the sender be lossy without escalating to a training failure.
+- **[Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) (sockets, fds, threading, signals)** → every primitive in this file: `socket.socket`, file descriptors closed on shutdown, daemon threads as kernel-scheduled execution units, the "close fd to wake blocked syscall" idiom.
+- **[Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP/ports)** → `bind` claims port 29765, `listen` flips to server mode, `connect` from rank, `recv`/`sendall` semantics. Big-endian length prefix is the canonical framing pattern that compensates for TCP being a stream-not-message protocol.
+- **[Q4](learning-qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `get_ddp_info()` is the literal mechanism by which a Python process learns its rank: read `LOCAL_RANK`/`RANK` from env vars set by torchrun.
+- **[Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe) (CUDA fork-safety)** → this transport is CUDA-free. No CUDA context to corrupt; survives fork/exec/NCCL deadlock.
+- **[Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) (NCCL)** → independence from NCCL is the architectural property that lets TraceML keep streaming telemetry even when collective ops hang. Diagnostic plane vs data plane separation.
+- **[W1](#w1-clipy-top-level-launcher-and-process-orchestrator) (CLI)** → CLI's `wait_for_tcp_listen` probe waits for `TCPServer.start()` to reach `socket.listen` before launching ranks; CLI passes `TRACEML_TCP_HOST`/`TRACEML_TCP_PORT` through env vars that both server and clients read.
+- **[W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session) (per-rank runtime)** → consumer of `TCPClient`; calls `get_ddp_info()` to decide whether to attach the client and to stamp every payload with a rank field.
+- **[W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping) (DB + sender)** → the sender batches new rows from the bounded in-memory database and feeds them into `send_batch`. The fail-open contract here is what lets the sender be lossy without escalating to a training failure.
 
 ### Concepts introduced
 
@@ -1775,26 +1775,26 @@ Length-prefixed framing (`!I` big-endian uint32 + msgpack body), `bytearray` as 
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/aggregator/aggregator_main.py](traceml/src/traceml/aggregator/aggregator_main.py) (239 lines)
-- [traceml/src/traceml/aggregator/trace_aggregator.py](traceml/src/traceml/aggregator/trace_aggregator.py) (354 lines)
-- [traceml/src/traceml/aggregator/sqlite_writer.py](traceml/src/traceml/aggregator/sqlite_writer.py) (476 lines)
-- [traceml/src/traceml/aggregator/sqlite_writers/process.py](traceml/src/traceml/aggregator/sqlite_writers/process.py) (307 lines, skim)
-- [traceml/src/traceml/aggregator/sqlite_writers/stdout_stderr.py](traceml/src/traceml/aggregator/sqlite_writers/stdout_stderr.py) (178 lines, skim)
-- [traceml/src/traceml/aggregator/sqlite_writers/step_memory.py](traceml/src/traceml/aggregator/sqlite_writers/step_memory.py) (192 lines, skim)
-- [traceml/src/traceml/aggregator/sqlite_writers/step_time.py](traceml/src/traceml/aggregator/sqlite_writers/step_time.py) (287 lines, skim)
-- [traceml/src/traceml/aggregator/sqlite_writers/system.py](traceml/src/traceml/aggregator/sqlite_writers/system.py) (410 lines, skim)
+- [traceml/src/traceml/aggregator/aggregator_main.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/aggregator_main.py) (239 lines)
+- [traceml/src/traceml/aggregator/trace_aggregator.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/trace_aggregator.py) (354 lines)
+- [traceml/src/traceml/aggregator/sqlite_writer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writer.py) (476 lines)
+- [traceml/src/traceml/aggregator/sqlite_writers/process.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/process.py) (307 lines, skim)
+- [traceml/src/traceml/aggregator/sqlite_writers/stdout_stderr.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/stdout_stderr.py) (178 lines, skim)
+- [traceml/src/traceml/aggregator/sqlite_writers/step_memory.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/step_memory.py) (192 lines, skim)
+- [traceml/src/traceml/aggregator/sqlite_writers/step_time.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/step_time.py) (287 lines, skim)
+- [traceml/src/traceml/aggregator/sqlite_writers/system.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/sqlite_writers/system.py) (410 lines, skim)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection), [Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean), [Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank), [Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets), [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection), [Q2](learning-qa.md#q2-what-is-server-side-vs-user-side), [Q3](learning-qa.md#q3-what-does-long-running-mean), [Q4](learning-qa.md#q4-what-is-a-gpu-rank), [Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets), [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port)
 
 **Origin:** the third "must-do" walkthrough from the roadmap — closes the loop on the TCP wire that W7+W8 set up on the rank side. Whatever `DBIncrementalSender` shipped over `TCPClient`, this is the code that picks it up, decodes it, and lands it on disk so renderers (W10) and summaries (W11) have something to read.
 
 ### Short answer
 
-Three files, one pipeline. `aggregator_main.py` is the lightweight process entrypoint that the CLI spawned in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) — it reads `TRACEML_*` env vars, builds a `TraceMLSettings`, installs SIGINT/SIGTERM handlers, and hands off to `TraceMLAggregator`. `trace_aggregator.py` owns the live machinery: a `TCPServer` accepts connections from every rank, a single background thread blocks on `wait_for_data()`, drains decoded telemetry envelopes, and tees each one to two sinks — a transitional in-memory `RemoteDBStore` (for legacy renderers) and an asynchronous `SQLiteWriterSimple`. `sqlite_writer.py` is that async sink: a single writer thread owning a SQLite connection, persisting every payload as msgpack BLOBs in `raw_messages` and also expanding selected samplers into typed projection tables via the per-sampler writers under `sqlite_writers/`. End-state: a single SQLite database per session that both the live UI (W10) and the post-run summary (W11) query.
+Three files, one pipeline. `aggregator_main.py` is the lightweight process entrypoint that the CLI spawned in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) — it reads `TRACEML_*` env vars, builds a `TraceMLSettings`, installs SIGINT/SIGTERM handlers, and hands off to `TraceMLAggregator`. `trace_aggregator.py` owns the live machinery: a `TCPServer` accepts connections from every rank, a single background thread blocks on `wait_for_data()`, drains decoded telemetry envelopes, and tees each one to two sinks — a transitional in-memory `RemoteDBStore` (for legacy renderers) and an asynchronous `SQLiteWriterSimple`. `sqlite_writer.py` is that async sink: a single writer thread owning a SQLite connection, persisting every payload as msgpack BLOBs in `raw_messages` and also expanding selected samplers into typed projection tables via the per-sampler writers under `sqlite_writers/`. End-state: a single SQLite database per session that both the live UI (W10) and the post-run summary (W11) query.
 
 ### Long answer
 
-The aggregator is the only "server-side, long-running" component in TraceML ([Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean)). Every other process is short-lived (CLI orchestrator, training ranks). That asymmetry shapes everything in this scope: ingestion must be non-blocking, persistence must be best-effort, the writer must absorb back-pressure without ever stalling a rank's send, and the loop must remain responsive to a shutdown signal even mid-flush. Read the three files in flow order: entrypoint → orchestrator → SQLite sink.
+The aggregator is the only "server-side, long-running" component in TraceML ([Q2](learning-qa.md#q2-what-is-server-side-vs-user-side), [Q3](learning-qa.md#q3-what-does-long-running-mean)). Every other process is short-lived (CLI orchestrator, training ranks). That asymmetry shapes everything in this scope: ingestion must be non-blocking, persistence must be best-effort, the writer must absorb back-pressure without ever stalling a rank's send, and the loop must remain responsive to a shutdown signal even mid-flush. Read the three files in flow order: entrypoint → orchestrator → SQLite sink.
 
 #### `aggregator_main.py` — process entrypoint (239 lines)
 
@@ -1804,7 +1804,7 @@ This is the module the CLI spawned via `python -m traceml.aggregator.aggregator_
 
 **`write_aggregator_error_log` (43–71).** Same pattern as `cli.py`'s atomic manifest write but simpler — append-only, with a try/except that swallows everything ("best-effort only: never mask the original failure"). The aggregator runs after the CLI has already detached from the user's terminal in some configurations, so a written-to-disk traceback is the only reliable forensics channel. The session root is the same `logs_dir/session_id` directory the CLI wrote the run manifest into, so all artifacts land together.
 
-**`read_traceml_env` (74–115).** Mirror of the env-var contract that `cli.py` writes ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator) step 1). Notice the backward-compat shim:
+**`read_traceml_env` (74–115).** Mirror of the env-var contract that `cli.py` writes ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator) step 1). Notice the backward-compat shim:
 
 ```python
 ui_mode = os.environ.get(
@@ -1817,7 +1817,7 @@ ui_mode = os.environ.get(
 
 The other notable defaults: `tcp_host=127.0.0.1` (local loopback only — no remote rank support yet), `tcp_port=29765` (matches the CLI default), `remote_max_rows=200` (per-table cap on the in-memory `RemoteDBStore`), `history_enabled=1` (SQLite persistence on by default).
 
-**`_install_signal_handlers` (118–129).** A 12-line function that does the entire shutdown contract: SIGINT and SIGTERM both flip a shared `threading.Event`. The handler is "intentionally minimal" because signal handlers run on the main thread, asynchronous to whatever Python bytecode was executing — touching anything but a `threading.Event` from inside a handler is a recipe for deadlocks. The actual cleanup happens in the `finally:` block of `main()`, which sees `stop_event` set and proceeds. ([Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) on signals.)
+**`_install_signal_handlers` (118–129).** A 12-line function that does the entire shutdown contract: SIGINT and SIGTERM both flip a shared `threading.Event`. The handler is "intentionally minimal" because signal handlers run on the main thread, asynchronous to whatever Python bytecode was executing — touching anything but a `threading.Event` from inside a handler is a recipe for deadlocks. The actual cleanup happens in the `finally:` block of `main()`, which sees `stop_event` set and proceeds. ([Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) on signals.)
 
 **`main` (132–235).** Six steps:
 
@@ -1876,7 +1876,7 @@ The thread itself (150–154) is created but not started — `daemon=True` means
 4. Aggregator loop thread starts last.
 ```
 
-Why this order: ranks are spawned by the CLI *after* the aggregator is TCP-ready (the readiness probe in W1, lines 324–354). If the TCP server isn't listening when the rank's `TCPClient` ([W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)) tries to connect, the rank gets a "connection refused" and crashes. SQLite writer must be running before any ingest call lands. Display driver must be initialized before its first tick. The loop is started last because it depends on all three.
+Why this order: ranks are spawned by the CLI *after* the aggregator is TCP-ready (the readiness probe in W1, lines 324–354). If the TCP server isn't listening when the rank's `TCPClient` ([W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)) tries to connect, the rank gets a "connection refused" and crashes. SQLite writer must be running before any ingest call lands. Display driver must be initialized before its first tick. The loop is started last because it depends on all three.
 
 **`stop` (184–231).** Reverse order: join the loop thread (with timeout), then `_safe`-stop each subordinate. Then — if history was enabled — generate the final summary by calling `generate_summary(db_path, ...)` from `final_summary.py`. This is the W11 hook. By the time `generate_summary` runs, `SQLiteWriter.stop` has already done its best-effort final flush (line 469 of `sqlite_writer.py`: "Best-effort final flush on stop"), so the SQLite file on disk reflects everything we received. The summary then queries that file at rest.
 
@@ -1901,7 +1901,7 @@ Two things to notice:
 1. **Tee, not branch.** Every message goes to SQLite. A *subset* (the layer samplers) also goes to `RemoteDBStore`. SQLite is the durable, complete record; the in-memory store is a transitional fast cache. The comment at 287–292 spells this out: "SQLite remains the full history sink for every payload. RemoteDBStore is now treated as a transitional cache for the few legacy renderers that still depend on it."
 2. **Direct `try/except` instead of `_safe`.** The docstring at 240–246 explicitly justifies this: "Direct try/except is used instead of `_safe(lambda ...)` to avoid allocating two closure objects per message in the hot path." The aggregator's `_loop` may iterate thousands of times a second under load; a `lambda` per branch is two heap allocations per message that get reclaimed immediately. Worth noting for systems-level fluency: the `_safe` abstraction is fine for cleanup paths but has a real cost in tight loops. Reaching for the lower-level pattern in the hot section is exactly the kind of judgment that distinguishes "writes correct Python" from "writes performant systems Python."
 
-**`_filter_remote_store_message` (281–306).** Handles two envelope shapes — a single dict or a list of dicts (a "batch envelope"). The `DBIncrementalSender` from [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping) ships batches when multiple samplers had new rows since the last tick; a single dict is the simpler case. Either way, we filter to the layer-sampler allowlist and return `None` if nothing matches (so the caller skips the in-memory ingest entirely).
+**`_filter_remote_store_message` (281–306).** Handles two envelope shapes — a single dict or a list of dicts (a "batch envelope"). The `DBIncrementalSender` from [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping) ships batches when multiple samplers had new rows since the last tick; a single dict is the simpler case. Either way, we filter to the layer-sampler allowlist and return `None` if nothing matches (so the caller skips the in-memory ingest entirely).
 
 **`_loop` (308–354).** The event loop:
 
@@ -1929,7 +1929,7 @@ The trailing block at 343–354 is the post-stop cleanup: one final drain + tick
 
 The most engineering-dense file in this scope. A single background thread owns a SQLite connection; producers (the aggregator's `_drain_tcp`) call `ingest()` which is a non-blocking `queue.put_nowait`; the writer thread wakes on a 500ms timer (or earlier, via a `wake` event) and flushes everything pending into one SQL transaction.
 
-**`_FlushBarrier` (61–71).** A sentinel object. When the writer thread sees one in the queue, it knows "everything before this is now committed; signal the caller waiting on `done`." This is how the post-run summary ([W11](#w11-summaries--diagnostics--end-of-run-analysis)) ensures it queries a SQLite file that includes the very last telemetry row. Used by `flush_now()` (165–197).
+**`_FlushBarrier` (61–71).** A sentinel object. When the writer thread sees one in the queue, it knows "everything before this is now committed; signal the caller waiting on `done`." This is how the post-run summary ([W11](#w11-summaries-diagnostics-end-of-run-analysis)) ensures it queries a SQLite file that includes the very last telemetry row. Used by `flush_now()` (165–197).
 
 **`SQLiteWriterConfig` (73–101).** Frozen dataclass. All knobs the writer takes: path, enabled, queue size (50k), flush interval (0.5s), max flush items per wake (20k), and SQLite `synchronous` mode. Comments at 90–92 explicitly call out the durability tradeoff.
 
@@ -1963,7 +1963,7 @@ conn.execute("PRAGMA foreign_keys=ON;")
 
 - `isolation_level=None` puts Python's sqlite3 module in autocommit mode. The writer manages `BEGIN`/`COMMIT` explicitly (line 382, 393). This is the right choice when you batch many inserts in one transaction — Python's default tries to be helpful and inserts implicit `BEGIN`s that interfere with explicit transaction management.
 - `check_same_thread=False` lets the connection be created on one thread (though here we always use it on the writer thread). Belt-and-suspenders.
-- `journal_mode=WAL` (write-ahead log) is the critical one. WAL allows readers (the live UI in [W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql), summaries in [W11](#w11-summaries--diagnostics--end-of-run-analysis)) to read from the database concurrently with the writer. Without WAL, every read would block writes and vice versa. WAL is also faster for write-heavy workloads because writes append to a separate `-wal` file rather than rewriting the main database in place.
+- `journal_mode=WAL` (write-ahead log) is the critical one. WAL allows readers (the live UI in [W10](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql), summaries in [W11](#w11-summaries-diagnostics-end-of-run-analysis)) to read from the database concurrently with the writer. Without WAL, every read would block writes and vice versa. WAL is also faster for write-heavy workloads because writes append to a separate `-wal` file rather than rewriting the main database in place.
 - `synchronous=NORMAL` — `fsync` only at WAL checkpoint boundaries, not on every commit. Trades a small durability window for ~10x throughput.
 - `cache_size=-2000` — the negative sign means "in KB" (positive means "pages"). 2 MB of page cache, enough for the working set without bloating RSS.
 
@@ -1981,7 +1981,7 @@ CREATE INDEX IF NOT EXISTS idx_raw_sampler_rank_id
     ON raw_messages(sampler, rank, id);
 ```
 
-This is the universal sink. Every message that reaches the writer lands here as a msgpack BLOB. The index is on `(sampler, rank, id)` because that's the dominant query pattern: "give me all StepTimeSampler rows from rank 0, oldest first." `id` autoincrement provides a stable monotonic ordering (insertion order = total order), which sidesteps the trickier question of how to compare timestamps across ranks ([Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank) — different ranks can be on different GPUs but the same host, so wall clocks agree, but monotonic clocks don't).
+This is the universal sink. Every message that reaches the writer lands here as a msgpack BLOB. The index is on `(sampler, rank, id)` because that's the dominant query pattern: "give me all StepTimeSampler rows from rank 0, oldest first." `id` autoincrement provides a stable monotonic ordering (insertion order = total order), which sidesteps the trickier question of how to compare timestamps across ranks ([Q4](learning-qa.md#q4-what-is-a-gpu-rank) — different ranks can be on different GPUs but the same host, so wall clocks agree, but monotonic clocks don't).
 
 **The flush pipeline (274–438).** Read these methods top-down:
 
@@ -2055,11 +2055,11 @@ Three threads inside the aggregator process: the TCP accept thread (in `transpor
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → the aggregator is *the* server-side process in TraceML. It outlives any single rank, owns the SQLite database, and is what the CLI's TCP readiness probe in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) was waiting for.
-- **[Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) (long-running)** → every design choice in `sqlite_writer.py` reifies long-running discipline: bounded queue (no unbounded memory growth), best-effort drops on overflow, daemonized threads, atomic-ish write transactions, WAL checkpoint on shutdown.
-- **[Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `rank` is a first-class column in `raw_messages` and in every projection table, so all queries can filter or partition by which GPU's process produced the row. The `RemoteDBStore` is rank-aware in the same way.
-- **[Q5](traceml_learning_qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) (OS internals)** → `signal.signal(SIGINT/SIGTERM)` for cooperative shutdown, `threading.Event` as the cross-thread synchronization primitive, `fsync`-via-`PRAGMA synchronous`, the WAL file as a kernel-level persistence mechanism.
-- **[Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP)** → `tcp_host=127.0.0.1` + `tcp_port=29765` is the loopback socket the ranks connect to. The aggregator never opens a non-loopback port; cross-host aggregation isn't supported in v0.2.5.
+- **[Q2](learning-qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → the aggregator is *the* server-side process in TraceML. It outlives any single rank, owns the SQLite database, and is what the CLI's TCP readiness probe in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) was waiting for.
+- **[Q3](learning-qa.md#q3-what-does-long-running-mean) (long-running)** → every design choice in `sqlite_writer.py` reifies long-running discipline: bounded queue (no unbounded memory growth), best-effort drops on overflow, daemonized threads, atomic-ish write transactions, WAL checkpoint on shutdown.
+- **[Q4](learning-qa.md#q4-what-is-a-gpu-rank) (GPU rank)** → `rank` is a first-class column in `raw_messages` and in every projection table, so all queries can filter or partition by which GPU's process produced the row. The `RemoteDBStore` is rank-aware in the same way.
+- **[Q5](learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) (OS internals)** → `signal.signal(SIGINT/SIGTERM)` for cooperative shutdown, `threading.Event` as the cross-thread synchronization primitive, `fsync`-via-`PRAGMA synchronous`, the WAL file as a kernel-level persistence mechanism.
+- **[Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port) (TCP)** → `tcp_host=127.0.0.1` + `tcp_port=29765` is the loopback socket the ranks connect to. The aggregator never opens a non-loopback port; cross-host aggregation isn't supported in v0.2.5.
 - **Async producer / single-writer pattern** → `SQLiteWriterSimple` is a textbook single-writer, multi-producer design: many threads call `ingest()`, exactly one thread touches `sqlite3`. This sidesteps the `check_same_thread` lock contention that crippled SQLite in early Python concurrency stories.
 - **Tee-and-allowlist routing** → `_drain_tcp`'s pattern of "everything to SQLite, allowlisted subset to in-memory store" is the migration path for replacing `RemoteDBStore` entirely. Worth recognizing as a generic technique whenever you're moving a system from one storage backend to another without a hard cutover.
 
@@ -2073,17 +2073,17 @@ Server-side aggregator process; cooperative shutdown via `threading.Event`; tee-
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/aggregator/display_drivers/base.py](traceml/src/traceml/aggregator/display_drivers/base.py) (44 lines)
-- [traceml/src/traceml/aggregator/display_drivers/cli.py](traceml/src/traceml/aggregator/display_drivers/cli.py) (360 lines)
-- [traceml/src/traceml/aggregator/display_drivers/summary.py](traceml/src/traceml/aggregator/display_drivers/summary.py) (70 lines)
-- [traceml/src/traceml/aggregator/display_drivers/page_layout.py](traceml/src/traceml/aggregator/display_drivers/page_layout.py) (28 lines)
-- [traceml/src/traceml/aggregator/display_drivers/layout.py](traceml/src/traceml/aggregator/display_drivers/layout.py) (13 lines)
-- (skim) [traceml/src/traceml/aggregator/display_drivers/nicegui.py](traceml/src/traceml/aggregator/display_drivers/nicegui.py) (387 lines)
-- (skim) [traceml/src/traceml/aggregator/display_drivers/nicegui_sections/pages.py](traceml/src/traceml/aggregator/display_drivers/nicegui_sections/pages.py), [model_diagnostics_section.py](traceml/src/traceml/aggregator/display_drivers/nicegui_sections/model_diagnostics_section.py)
-- (skim) [traceml/src/traceml/renderers/base_renderer.py](traceml/src/traceml/renderers/base_renderer.py) (34 lines)
-- (skim) [traceml/src/traceml/renderers/layer_combined_time/renderer.py](traceml/src/traceml/renderers/layer_combined_time/renderer.py) (112 lines), [layer_combined_memory/renderer.py](traceml/src/traceml/renderers/layer_combined_memory/renderer.py) (132 lines), [model_diagnostics/renderer.py](traceml/src/traceml/renderers/model_diagnostics/renderer.py) (89 lines)
+- [traceml/src/traceml/aggregator/display_drivers/base.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/base.py) (44 lines)
+- [traceml/src/traceml/aggregator/display_drivers/cli.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/cli.py) (360 lines)
+- [traceml/src/traceml/aggregator/display_drivers/summary.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/summary.py) (70 lines)
+- [traceml/src/traceml/aggregator/display_drivers/page_layout.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/page_layout.py) (28 lines)
+- [traceml/src/traceml/aggregator/display_drivers/layout.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/layout.py) (13 lines)
+- (skim) [traceml/src/traceml/aggregator/display_drivers/nicegui.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/nicegui.py) (387 lines)
+- (skim) [traceml/src/traceml/aggregator/display_drivers/nicegui_sections/pages.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/nicegui_sections/pages.py), [model_diagnostics_section.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/display_drivers/nicegui_sections/model_diagnostics_section.py)
+- (skim) [traceml/src/traceml/renderers/base_renderer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/renderers/base_renderer.py) (34 lines)
+- (skim) [traceml/src/traceml/renderers/layer_combined_time/renderer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/renderers/layer_combined_time/renderer.py) (112 lines), [layer_combined_memory/renderer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/renderers/layer_combined_memory/renderer.py) (132 lines), [model_diagnostics/renderer.py](https://github.com/Pendu/traceml/blob/main/src/traceml/renderers/model_diagnostics/renderer.py) (89 lines)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping), [W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes), [Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes), [Q2](learning-qa.md#q2-what-is-server-side-vs-user-side), [Q3](learning-qa.md#q3-what-does-long-running-mean)
 
 **Origin:** the "Live Render" block in the architecture diagram. The aggregator has the bytes; this is the layer that turns them back into something a human reads while training is in flight.
 
@@ -2099,9 +2099,9 @@ This is the cleanest split in the codebase. The "compute" path (renderers → SQ
 
 `BaseDisplayDriver` is an `ABC` with exactly three abstract methods: `start()`, `tick()`, `stop()`. The constructor signature is fixed: `(logger, store: RemoteDBStore, settings: TraceMLSettings)`. That's it — everything else is private to the concrete driver.
 
-Why so minimal? The aggregator main loop ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)) calls `driver.tick()` on every aggregator tick (once per aggregator polling interval). The aggregator does not care what the driver does with that tick. It might paint a Rich table, push payloads to a NiceGUI websocket, or no-op (summary mode). The contract being this thin is what lets `summary.py` be 70 lines of pure `return None` without breaking anything — the aggregator path doesn't branch on driver type.
+Why so minimal? The aggregator main loop ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)) calls `driver.tick()` on every aggregator tick (once per aggregator polling interval). The aggregator does not care what the driver does with that tick. It might paint a Rich table, push payloads to a NiceGUI websocket, or no-op (summary mode). The contract being this thin is what lets `summary.py` be 70 lines of pure `return None` without breaking anything — the aggregator path doesn't branch on driver type.
 
-This is also where the read-only handoff is documented: the driver receives the `RemoteDBStore` ([W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)) so it (or really, the renderers it owns) can query rank-aware in-memory state, plus a settings object so it knows which `db_path` the SQLite history file lives at. No write path through the driver — display is a strict reader.
+This is also where the read-only handoff is documented: the driver receives the `RemoteDBStore` ([W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)) so it (or really, the renderers it owns) can query rank-aware in-memory state, plus a settings object so it knows which `db_path` the SQLite history file lives at. No write path through the driver — display is a strict reader.
 
 #### layout.py + page_layout.py — named slots, not widgets (entire files)
 
@@ -2139,9 +2139,9 @@ if self._deep_profile:
 
 Two things to notice:
 
-1. **Renderers chosen by profile.** `traceml watch` gets system + process + stdout/stderr only (lightweight, no model-aware panels). `traceml run` adds step-level renderers. `traceml deep` adds the per-layer combined renderers, which are expensive enough that we don't want them on by default. This is how the profile flag from [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) actually shapes the UI.
+1. **Renderers chosen by profile.** `traceml watch` gets system + process + stdout/stderr only (lightweight, no model-aware panels). `traceml run` adds step-level renderers. `traceml deep` adds the per-layer combined renderers, which are expensive enough that we don't want them on by default. This is how the profile flag from [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) actually shapes the UI.
 
-2. **Two backends for renderers.** `SystemRenderer`, `ProcessRenderer`, `StdoutStderrRenderer`, `StepCombinedRenderer`, `StepMemoryRenderer` all take `db_path=...` — they query the **on-disk SQLite file** that the aggregator's writers persisted ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)). The two layer-combined renderers take `remote_store=store` — they query the **in-memory `RemoteDBStore` directly** because the layer tables can be wide and high-frequency, and round-tripping to SQLite for a dashboard refresh is wasted work. Both paths land in renderer compute services that produce the same `BaseRenderer` contract on the way out.
+2. **Two backends for renderers.** `SystemRenderer`, `ProcessRenderer`, `StdoutStderrRenderer`, `StepCombinedRenderer`, `StepMemoryRenderer` all take `db_path=...` — they query the **on-disk SQLite file** that the aggregator's writers persisted ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)). The two layer-combined renderers take `remote_store=store` — they query the **in-memory `RemoteDBStore` directly** because the layer tables can be wide and high-frequency, and round-tripping to SQLite for a dashboard refresh is wasted work. Both paths land in renderer compute services that produce the same `BaseRenderer` contract on the way out.
 
 ##### Layout construction — three profiles, three trees (lines 169–237)
 
@@ -2169,7 +2169,7 @@ This is duck-typed: any object with `get_panel_renderable()` and `layout_section
 
 ##### `_update_all_sections` and `_refresh` (lines 331–360)
 
-Each tick: call every binding's `render_fn()`, slot the returned Rich renderable into the layout. Per-section try/except — if one renderer's compute crashes, it gets a red "Render Error" panel in its slot, but the rest of the dashboard updates. This is the fail-open principle ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator)) applied to UI: a buggy compute path in `LayerCombinedMemoryRenderer` shouldn't blank `SystemRenderer`'s panel.
+Each tick: call every binding's `render_fn()`, slot the returned Rich renderable into the layout. Per-section try/except — if one renderer's compute crashes, it gets a red "Render Error" panel in its slot, but the rest of the dashboard updates. This is the fail-open principle ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator)) applied to UI: a buggy compute path in `LayerCombinedMemoryRenderer` shouldn't blank `SystemRenderer`'s panel.
 
 `_refresh` does one subtle thing:
 
@@ -2180,11 +2180,11 @@ finally:
     StreamCapture.redirect_to_capture()
 ```
 
-The runtime hijacks user `print`s into a `StreamCapture` buffer so they show up in the stdout/stderr panel ([W2](#w2-per-rank-runtime--executor-runtime-loop-launch-context-session) sets this up). But Rich itself prints to stdout to update the terminal. If we let Rich's writes go through the capture, the dashboard would render itself into its own log panel — infinite recursion of dashboard-text. The fix: temporarily restore real stdout for the duration of `Live.refresh()`, then redirect back. Tiny detail, big effect.
+The runtime hijacks user `print`s into a `StreamCapture` buffer so they show up in the stdout/stderr panel ([W2](#w2-per-rank-runtime-executor-runtime-loop-launch-context-session) sets this up). But Rich itself prints to stdout to update the terminal. If we let Rich's writes go through the capture, the dashboard would render itself into its own log panel — infinite recursion of dashboard-text. The fix: temporarily restore real stdout for the duration of `Live.refresh()`, then redirect back. Tiny detail, big effect.
 
 #### summary.py — the no-op driver (lines 31–70)
 
-Three methods that all `return None`. Used by `traceml run --mode summary` (or similar) where the user wants telemetry ingested and history persisted but doesn't want a live UI — batch jobs, CI, headless servers. Crucially, the **final summary card is still produced** at aggregator shutdown ([W11](#w11-summaries--diagnostics--end-of-run-analysis)) regardless of which driver was active, because summary generation is owned by the aggregator's shutdown path, not by the display driver. This separation means you can opt out of live UI without losing post-run analysis. The docstring (lines 1–20) makes this contract explicit, which is rare and useful: it tells readers exactly what they're trading off.
+Three methods that all `return None`. Used by `traceml run --mode summary` (or similar) where the user wants telemetry ingested and history persisted but doesn't want a live UI — batch jobs, CI, headless servers. Crucially, the **final summary card is still produced** at aggregator shutdown ([W11](#w11-summaries-diagnostics-end-of-run-analysis)) regardless of which driver was active, because summary generation is owned by the aggregator's shutdown path, not by the display driver. This separation means you can opt out of live UI without losing post-run analysis. The docstring (lines 1–20) makes this contract explicit, which is rare and useful: it tells readers exactly what they're trading off.
 
 #### nicegui.py — the web driver (skimmed, lines 1–387)
 
@@ -2242,11 +2242,11 @@ A composite renderer that's dashboard-only. Its `get_panel_renderable()` returns
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → Display drivers are 100% server-side. They live in the aggregator process, read from the aggregator's `RemoteDBStore` and SQLite file, and never run inside training ranks. The user-side telemetry pipeline ([W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)) is what feeds the data they paint.
-- **[Q3](traceml_learning_qa.md#q3-what-does-long-running-mean) (long-running)** → Drivers run for the full duration of training. `tick()` is called on every aggregator tick (~once per second), so robustness matters: per-section try/except, lazy registration, last-good caching in `ModelDiagnosticsRenderer`, never raising in `_ui_update_loop`. All the standard long-running-service hygiene from Q3 applies.
-- **[W1](#w1-clipy--top-level-launcher-and-process-orchestrator) (CLI orchestrator)** → The `--profile` flag (`watch` / `run` / `deep`) is what shapes the renderer set in `CLIDisplayDriver.__init__` and `NiceGUIDisplayDriver.__init__`. The flag travels through env vars set by `cli.py`, read by `aggregator_main.py` into a `TraceMLSettings`, and the driver branches on `settings.profile`.
-- **[W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping) (database + sender)** → Layer-combined renderers query `RemoteDBStore` directly (in-memory, rank-aware) instead of round-tripping through SQLite. This is the read side of W7's bounded deques.
-- **[W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes) (aggregator core)** → The aggregator main loop owns `driver.tick()`. The aggregator's SQLite writers ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)) produce the `db_path` file that system / process / step renderers read from. Drivers and aggregator share the `RemoteDBStore` instance by reference; no copy.
+- **[Q2](learning-qa.md#q2-what-is-server-side-vs-user-side) (server-side vs user-side)** → Display drivers are 100% server-side. They live in the aggregator process, read from the aggregator's `RemoteDBStore` and SQLite file, and never run inside training ranks. The user-side telemetry pipeline ([W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)) is what feeds the data they paint.
+- **[Q3](learning-qa.md#q3-what-does-long-running-mean) (long-running)** → Drivers run for the full duration of training. `tick()` is called on every aggregator tick (~once per second), so robustness matters: per-section try/except, lazy registration, last-good caching in `ModelDiagnosticsRenderer`, never raising in `_ui_update_loop`. All the standard long-running-service hygiene from Q3 applies.
+- **[W1](#w1-clipy-top-level-launcher-and-process-orchestrator) (CLI orchestrator)** → The `--profile` flag (`watch` / `run` / `deep`) is what shapes the renderer set in `CLIDisplayDriver.__init__` and `NiceGUIDisplayDriver.__init__`. The flag travels through env vars set by `cli.py`, read by `aggregator_main.py` into a `TraceMLSettings`, and the driver branches on `settings.profile`.
+- **[W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping) (database + sender)** → Layer-combined renderers query `RemoteDBStore` directly (in-memory, rank-aware) instead of round-tripping through SQLite. This is the read side of W7's bounded deques.
+- **[W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes) (aggregator core)** → The aggregator main loop owns `driver.tick()`. The aggregator's SQLite writers ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)) produce the `db_path` file that system / process / step renderers read from. Drivers and aggregator share the `RemoteDBStore` instance by reference; no copy.
 
 ### Concepts introduced
 
@@ -2258,18 +2258,18 @@ Driver / renderer split (compute vs present), `start / tick / stop` lifecycle co
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/aggregator/final_summary.py](traceml/src/traceml/aggregator/final_summary.py) (288 lines)
-- [traceml/src/traceml/aggregator/summary_service.py](traceml/src/traceml/aggregator/summary_service.py) (110 lines)
-- [traceml/src/traceml/aggregator/summaries/summary_io.py](traceml/src/traceml/aggregator/summaries/summary_io.py) (42 lines)
-- [traceml/src/traceml/aggregator/summaries/summary_layout.py](traceml/src/traceml/aggregator/summaries/summary_layout.py) (72 lines)
-- [traceml/src/traceml/aggregator/summaries/diagnosis_presentation.py](traceml/src/traceml/aggregator/summaries/diagnosis_presentation.py) (135 lines)
-- [traceml/src/traceml/diagnostics/common.py](traceml/src/traceml/diagnostics/common.py) (60 lines)
-- [traceml/src/traceml/diagnostics/trends.py](traceml/src/traceml/diagnostics/trends.py) (26 lines)
-- Skimmed (mentioned by name): [traceml/src/traceml/aggregator/summaries/process.py](traceml/src/traceml/aggregator/summaries/process.py) (442), [step_memory.py](traceml/src/traceml/aggregator/summaries/step_memory.py) (406), [step_time.py](traceml/src/traceml/aggregator/summaries/step_time.py) (840), [system.py](traceml/src/traceml/aggregator/summaries/system.py) (349), [diagnostics/step_time.py](traceml/src/traceml/diagnostics/step_time.py) (814), [diagnostics/step_memory.py](traceml/src/traceml/diagnostics/step_memory.py) (575), [diagnostics/model_diagnostics.py](traceml/src/traceml/diagnostics/model_diagnostics.py) (394)
+- [traceml/src/traceml/aggregator/final_summary.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/final_summary.py) (288 lines)
+- [traceml/src/traceml/aggregator/summary_service.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summary_service.py) (110 lines)
+- [traceml/src/traceml/aggregator/summaries/summary_io.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/summary_io.py) (42 lines)
+- [traceml/src/traceml/aggregator/summaries/summary_layout.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/summary_layout.py) (72 lines)
+- [traceml/src/traceml/aggregator/summaries/diagnosis_presentation.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/diagnosis_presentation.py) (135 lines)
+- [traceml/src/traceml/diagnostics/common.py](https://github.com/Pendu/traceml/blob/main/src/traceml/diagnostics/common.py) (60 lines)
+- [traceml/src/traceml/diagnostics/trends.py](https://github.com/Pendu/traceml/blob/main/src/traceml/diagnostics/trends.py) (26 lines)
+- Skimmed (mentioned by name): [traceml/src/traceml/aggregator/summaries/process.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/process.py) (442), [step_memory.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/step_memory.py) (406), [step_time.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/step_time.py) (840), [system.py](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/system.py) (349), [diagnostics/step_time.py](https://github.com/Pendu/traceml/blob/main/src/traceml/diagnostics/step_time.py) (814), [diagnostics/step_memory.py](https://github.com/Pendu/traceml/blob/main/src/traceml/diagnostics/step_memory.py) (575), [diagnostics/model_diagnostics.py](https://github.com/Pendu/traceml/blob/main/src/traceml/diagnostics/model_diagnostics.py) (394)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes), [W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql), [Q2](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side), [Q3](traceml_learning_qa.md#q3-what-does-long-running-mean), [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier), [P50](traceml_pytorch_qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes), [W10](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql), [Q2](learning-qa.md#q2-what-is-server-side-vs-user-side), [Q3](learning-qa.md#q3-what-does-long-running-mean), [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier), [P50](pytorch-qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)
 
-**Origin:** the largest scope in the walkthrough series (~3k LOC across two directories), but conceptually self-contained — once the aggregator has finished writing telemetry to SQLite ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)), summaries+diagnostics are pure SQL-over-the-DB. This walkthrough samples representatively rather than reading every line; the goal is to show the architectural shape, not enumerate every helper.
+**Origin:** the largest scope in the walkthrough series (~3k LOC across two directories), but conceptually self-contained — once the aggregator has finished writing telemetry to SQLite ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)), summaries+diagnostics are pure SQL-over-the-DB. This walkthrough samples representatively rather than reading every line; the goal is to show the architectural shape, not enumerate every helper.
 
 ### Short answer
 
@@ -2281,7 +2281,7 @@ Live UI shows what's happening *right now*; summaries answer *what just happened
 
 There are two ways summaries get triggered, and the code is organized around that distinction.
 
-**End-of-run.** When training finishes naturally (or fails), the aggregator's main loop calls into [`final_summary.generate_summary(db_path)`](traceml/src/traceml/aggregator/final_summary.py) one final time. It generates the four domain cards, writes JSON+text artifacts, prints to stdout. This is the canonical "TraceML Run Summary" block users see at the end of `traceml watch`.
+**End-of-run.** When training finishes naturally (or fails), the aggregator's main loop calls into [`final_summary.generate_summary(db_path)`](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/final_summary.py) one final time. It generates the four domain cards, writes JSON+text artifacts, prints to stdout. This is the canonical "TraceML Run Summary" block users see at the end of `traceml watch`.
 
 **On-demand mid-run.** A separate service polls a request file and produces a fresh summary while training is still going — used by integrations and notebooks that want a "summary now" snapshot without stopping the run. This is `summary_service.py`.
 
@@ -2333,15 +2333,15 @@ The protocol is dead simple — no TCP, no signals, just two files in the sessio
 3. `_handle_request` (59–110) calls `self._flush_history(5.0)` — this is a callback injected at construction time that blocks until the in-memory SQLite write queue has flushed to disk (so the summary sees all telemetry up to the request moment), then runs `generate_summary(...)`, then writes a `FinalSummaryResponse` to `final_summary_response.json` with `status="ok"` and the artifact paths.
 4. The requesting process polls the response file for matching `request_id`.
 
-Why files instead of TCP? Because the aggregator's TCP server is busy receiving telemetry frames from N ranks ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)) — adding a second request/response protocol on top would mean either multiplexing on one socket (more framing complexity) or opening a second port (more config). Files are zero-protocol: the OS handles concurrency via `os.replace`, and the files double as a debug audit trail. A file-based protocol like this is the simplest possible IPC for "infrequent, latency-tolerant control plane" — telemetry is the data plane and stays on TCP.
+Why files instead of TCP? Because the aggregator's TCP server is busy receiving telemetry frames from N ranks ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)) — adding a second request/response protocol on top would mean either multiplexing on one socket (more framing complexity) or opening a second port (more config). Files are zero-protocol: the OS handles concurrency via `os.replace`, and the files double as a debug audit trail. A file-based protocol like this is the simplest possible IPC for "infrequent, latency-tolerant control plane" — telemetry is the data plane and stays on TCP.
 
-The error path (lines 93–110) catches any exception, logs it, and writes a `FinalSummaryResponse` with `status="error"` and the exception message. This is the [fail-open principle](#w1-clipy--top-level-launcher-and-process-orchestrator) again — a busted summary must never crash the aggregator while training is still running.
+The error path (lines 93–110) catches any exception, logs it, and writes a `FinalSummaryResponse` with `status="error"` and the exception message. This is the [fail-open principle](#w1-clipy-top-level-launcher-and-process-orchestrator) again — a busted summary must never crash the aggregator while training is still running.
 
 #### summaries/summary_io.py and summary_layout.py: the tiny utilities
 
 Two trivial files that exist purely to keep the four domain modules from each reinventing JSON/text helpers.
 
-**`summary_io.py` (42 lines)** — three functions: `append_text(path, text)` (open `a+`, seek to end, write), `load_json_or_empty(path)` (returns `{}` on any error), `write_json(path, obj)` (pretty-prints with `indent=2`). Each domain summary appends its card to `<db>_summary_card.txt` and merges its dict into `<db>_summary_card.json`. The merge pattern in [step_time.py:833–835](traceml/src/traceml/aggregator/summaries/step_time.py) is exactly:
+**`summary_io.py` (42 lines)** — three functions: `append_text(path, text)` (open `a+`, seek to end, write), `load_json_or_empty(path)` (returns `{}` on any error), `write_json(path, obj)` (pretty-prints with `indent=2`). Each domain summary appends its card to `<db>_summary_card.txt` and merges its dict into `<db>_summary_card.json`. The merge pattern in [step_time.py:833–835](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/summaries/step_time.py) is exactly:
 
 ```python
 existing = load_json_or_empty(db_path + "_summary_card.json")
@@ -2370,7 +2370,7 @@ generate_<domain>_summary_card(db_path, *, max_rows=..., print_to_stdout=True) -
     9. return structured_dict
 ```
 
-**`system.py` (349 lines).** Aggregates `system_samples` (the host-level CPU/RAM/GPU sampler from [W6](#w6-samplers--schemas--turning-hook-events-into-structured-rows)). The interesting query is `_load_system_summary_agg` at lines 71–174: one big SQL with `AVG()` and `MAX()` over CPU%, RAM bytes, GPU util, GPU mem, GPU temp, GPU power — all in a single round trip, capped at `max_system_rows=5000` via `LIMIT`. The cap is a defense against degenerate runs that sampled millions of rows. Result is a `SystemSummaryAgg` dataclass (line 33), then `_build_system_card` formats it.
+**`system.py` (349 lines).** Aggregates `system_samples` (the host-level CPU/RAM/GPU sampler from [W6](#w6-samplers-schemas-turning-hook-events-into-structured-rows)). The interesting query is `_load_system_summary_agg` at lines 71–174: one big SQL with `AVG()` and `MAX()` over CPU%, RAM bytes, GPU util, GPU mem, GPU temp, GPU power — all in a single round trip, capped at `max_system_rows=5000` via `LIMIT`. The cap is a defense against degenerate runs that sampled millions of rows. Result is a `SystemSummaryAgg` dataclass (line 33), then `_build_system_card` formats it.
 
 **`process.py` (442 lines).** Aggregates `process_samples` (the per-PID resource sampler). Per-rank GPU lines via `_build_gpu_line`, plus `_build_takeaway` (line 186) that synthesizes a one-sentence "process saw avg X GB RAM, peak Y" recap.
 
@@ -2382,9 +2382,9 @@ generate_<domain>_summary_card(db_path, *, max_rows=..., print_to_stdout=True) -
 - `_build_step_time_card` (476–755) is 280 lines of formatting logic: scope line, timing line, optional distributed comparison lines, dominant-phase takeaway, then `present_step_time_summary_diagnosis(...)` for the verdict.
 - `generate_step_time_summary_card` (757–840) is the public entry that wires everything together.
 
-The `RankStepSummary → split_ms / split_pct / wait_avg_ms` decomposition (lines 345–384) is doing the load-balance math: every step is broken into DL+FWD+BWD+OPT+WAIT, where `WAIT = total_step - (FWD+BWD+OPT)`. This residual wait is the proxy for collective-comm time ([Q12 (NCCL)](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) — when one rank reports high WAIT and others don't, a faster rank is sitting in `all_reduce` waiting for a slower rank.
+The `RankStepSummary → split_ms / split_pct / wait_avg_ms` decomposition (lines 345–384) is doing the load-balance math: every step is broken into DL+FWD+BWD+OPT+WAIT, where `WAIT = total_step - (FWD+BWD+OPT)`. This residual wait is the proxy for collective-comm time ([Q12 (NCCL)](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) — when one rank reports high WAIT and others don't, a faster rank is sitting in `all_reduce` waiting for a slower rank.
 
-**`step_memory.py` (406 lines).** Aggregates `step_memory_samples`. Tracks both allocated and reserved metrics ([P33 (caching allocator)](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)), computes `_head_tail_trend` (line 115) — early-window vs late-window averages — to surface memory creep. `_primary_metric` (182) picks one metric (allocated peak by default) for the headline diagnosis.
+**`step_memory.py` (406 lines).** Aggregates `step_memory_samples`. Tracks both allocated and reserved metrics ([P33 (caching allocator)](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)), computes `_head_tail_trend` (line 115) — early-window vs late-window averages — to surface memory creep. `_primary_metric` (182) picks one metric (allocated peak by default) for the headline diagnosis.
 
 The shared template means every card has the same shape: scope, headline numbers, per-rank breakdown if multi-rank, dominant signal, diagnosis, action. The user gets a predictable layout regardless of which domain they're reading.
 
@@ -2408,7 +2408,7 @@ The "every diagnosis has the same four fields" contract is the architectural bac
 
 **`step_memory.py` (575 lines)** mirrors the step-time structure with memory-specific kinds: HIGH_PRESSURE, IMBALANCE, CREEP_EARLY, CREEP_CONFIRMED, BALANCED, NO_DATA. Thresholds (lines 53–82) include both byte-level (`creep_confirmed_delta_bytes = 1 GiB`) and fraction-level (`pressure_warn_fraction = 0.92` of GPU capacity) policies, plus a nested `TrendConfig` for creep detection. `WindowCreepEvidence` (105) is a typed record of the actual evidence — `baseline_avg_bytes`, `mid_avg_bytes`, `recent_avg_bytes`, `overall_worst_growth_pct` — that the diagnosis cites in its `note`. This is what makes the verdict auditable: the user can see not just "MEMORY CREEP" but "memory grew from 8.2 GiB → 9.7 GiB across the last 1000 steps, +18%."
 
-**`model_diagnostics.py` (394 lines)** is the synthesizer. `build_model_diagnostics_payload` (line 98) calls `build_step_diagnosis(...)` and `build_step_memory_diagnosis(...)`, packages each into a `ModelDiagnosisItem`, and returns one `ModelDiagnosticsPayload` with an `overall_severity` derived from `_max_severity` over the items. This is what the live "Model Diagnostics" dashboard card consumes ([W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql)). Both engines are wrapped in `try/except Exception` (line 109+) — a verdict-engine bug must never break the dashboard.
+**`model_diagnostics.py` (394 lines)** is the synthesizer. `build_model_diagnostics_payload` (line 98) calls `build_step_diagnosis(...)` and `build_step_memory_diagnosis(...)`, packages each into a `ModelDiagnosisItem`, and returns one `ModelDiagnosticsPayload` with an `overall_severity` derived from `_max_severity` over the items. This is what the live "Model Diagnostics" dashboard card consumes ([W10](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql)). Both engines are wrapped in `try/except Exception` (line 109+) — a verdict-engine bug must never break the dashboard.
 
 #### diagnosis_presentation.py: live wording vs end-of-run wording
 
@@ -2425,7 +2425,7 @@ The architectural rule the docstring states explicitly is: **"this module does n
 
 Walking through what happens when training exits cleanly:
 
-1. The user's training script returns. The CLI's supervisor loop ([W1, lines 595–634](#w1-clipy--top-level-launcher-and-process-orchestrator)) detects training has exited.
+1. The user's training script returns. The CLI's supervisor loop ([W1, lines 595–634](#w1-clipy-top-level-launcher-and-process-orchestrator)) detects training has exited.
 2. CLI sends SIGTERM to the aggregator.
 3. The aggregator's shutdown handler calls `final_summary.generate_summary(db_path, session_root=..., print_to_stdout=True)`.
 4. `generate_summary` → `build_summary_payload` → four `generate_*_summary_card(db_path, print_to_stdout=False)` calls in sequence.
@@ -2441,22 +2441,22 @@ For mid-run on-demand, steps 1–2 are replaced by "the FinalSummaryService poll
 
 #### Where this sits in the bigger architecture
 
-Looking back at the data flow ([W9](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)): ranks ship telemetry frames over TCP → aggregator decodes them into rows → SQLite writers persist rows into `<domain>_samples` tables. The summaries+diagnostics layer is **read-only against that SQLite store**. It opens its own connection, queries, closes. It never touches the live in-memory `RemoteDBStore` that drives the live dashboard ([W10](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql)).
+Looking back at the data flow ([W9](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)): ranks ship telemetry frames over TCP → aggregator decodes them into rows → SQLite writers persist rows into `<domain>_samples` tables. The summaries+diagnostics layer is **read-only against that SQLite store**. It opens its own connection, queries, closes. It never touches the live in-memory `RemoteDBStore` that drives the live dashboard ([W10](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql)).
 
 This is why the diagnostics engine can be reused identically for live and end-of-run: live renderers feed it the current window of metrics; end-of-run summaries feed it the whole-run aggregated metrics. Same `build_step_diagnosis(metrics, thresholds)` call, same `StepDiagnosis` dataclass out, only the input data differs. The `diagnosis_presentation` adapter is the only seam where the two contexts diverge.
 
-Compared to `torch.profiler` ([P50](traceml_pytorch_qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)): the PyTorch profiler dumps a chrome-trace JSON that you load in a viewer and stare at. TraceML's summary is the opposite philosophy — pre-digested verdicts ("INPUT-BOUND with worst rank r3"), not raw timelines. The trade-off is that you can't drill into a specific kernel with TraceML's summary, but you don't have to know what you're looking for either. The summary tells you. That's the product positioning.
+Compared to `torch.profiler` ([P50](pytorch-qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)): the PyTorch profiler dumps a chrome-trace JSON that you load in a viewer and stare at. TraceML's summary is the opposite philosophy — pre-digested verdicts ("INPUT-BOUND with worst rank r3"), not raw timelines. The trade-off is that you can't drill into a specific kernel with TraceML's summary, but you don't have to know what you're looking for either. The summary tells you. That's the product positioning.
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q2 (server-side vs user-side)](traceml_learning_qa.md#q2-what-is-server-side-vs-user-side)** → summaries run entirely on the server-side (the aggregator process), reading the SQLite DB the aggregator owns. User-side ranks don't participate in summary generation; they just shipped the rows earlier.
-- **[Q3 (long-running)](traceml_learning_qa.md#q3-what-does-long-running-mean)** → the on-demand `FinalSummaryService` is the service-pattern manifestation: the aggregator is long-running, accepts requests by file polling, idempotent via `_last_request_id`, fail-open via try/except writing an error response.
-- **[Q12 (NCCL all-reduce)](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)** → step-time's `wait_proxy = step_time - (fwd+bwd+opt)` is the heuristic for measuring how long ranks spend stuck in collective-comm barriers without instrumenting NCCL itself.
-- **[P33 (caching allocator)](traceml_pytorch_qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)** → step-memory diagnostics tracks both allocated and reserved bytes because the caching allocator's reserved pool grows monotonically; "memory creep" is meaningful for allocated, not necessarily for reserved.
-- **[P50 (torch.profiler comparison)](traceml_pytorch_qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)** → summaries+diagnostics are exactly where TraceML differentiates: not "here's a chrome trace, you figure it out" but "INPUT-BOUND, here's why, here's what to try."
-- **[W1 (CLI orchestration)](#w1-clipy--top-level-launcher-and-process-orchestrator)** → atomic-write pattern (`write_json_atomic` / `os.replace`) reused here for canonical summary files; manifest-driven state machine extended into request/response files.
-- **[W9 (aggregator core)](#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes)** → SQLite is the boundary: aggregator writes, summaries read. Two processes never share memory; the DB on disk is the contract.
-- **[W10 (live UI)](#w10-display-drivers--renderers--terminal-and-web-ui-from-sql)** → diagnostics/ is shared with the live UI; only `diagnosis_presentation.py` swaps wording for end-of-run.
+- **[Q2 (server-side vs user-side)](learning-qa.md#q2-what-is-server-side-vs-user-side)** → summaries run entirely on the server-side (the aggregator process), reading the SQLite DB the aggregator owns. User-side ranks don't participate in summary generation; they just shipped the rows earlier.
+- **[Q3 (long-running)](learning-qa.md#q3-what-does-long-running-mean)** → the on-demand `FinalSummaryService` is the service-pattern manifestation: the aggregator is long-running, accepts requests by file polling, idempotent via `_last_request_id`, fail-open via try/except writing an error response.
+- **[Q12 (NCCL all-reduce)](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)** → step-time's `wait_proxy = step_time - (fwd+bwd+opt)` is the heuristic for measuring how long ranks spend stuck in collective-comm barriers without instrumenting NCCL itself.
+- **[P33 (caching allocator)](pytorch-qa.md#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)** → step-memory diagnostics tracks both allocated and reserved bytes because the caching allocator's reserved pool grows monotonically; "memory creep" is meaningful for allocated, not necessarily for reserved.
+- **[P50 (torch.profiler comparison)](pytorch-qa.md#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)** → summaries+diagnostics are exactly where TraceML differentiates: not "here's a chrome trace, you figure it out" but "INPUT-BOUND, here's why, here's what to try."
+- **[W1 (CLI orchestration)](#w1-clipy-top-level-launcher-and-process-orchestrator)** → atomic-write pattern (`write_json_atomic` / `os.replace`) reused here for canonical summary files; manifest-driven state machine extended into request/response files.
+- **[W9 (aggregator core)](#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes)** → SQLite is the boundary: aggregator writes, summaries read. Two processes never share memory; the DB on disk is the contract.
+- **[W10 (live UI)](#w10-display-drivers-renderers-terminal-and-web-ui-from-sql)** → diagnostics/ is shared with the live UI; only `diagnosis_presentation.py` swaps wording for end-of-run.
 
 ### Concepts introduced
 
@@ -2468,16 +2468,16 @@ Cards-of-cards composition pattern (per-domain card generators stitched by an or
 
 **Date:** 2026-04-25
 **Files:**
-- [traceml/src/traceml/integrations/huggingface.py](traceml/src/traceml/integrations/huggingface.py) (84 lines)
-- [traceml/src/traceml/integrations/lightning.py](traceml/src/traceml/integrations/lightning.py) (170 lines)
+- [traceml/src/traceml/integrations/huggingface.py](https://github.com/Pendu/traceml/blob/main/src/traceml/integrations/huggingface.py) (84 lines)
+- [traceml/src/traceml/integrations/lightning.py](https://github.com/Pendu/traceml/blob/main/src/traceml/integrations/lightning.py) (170 lines)
 
-**Reads cleanly with:** [W1](#w1-clipy--top-level-launcher-and-process-orchestrator), [W3](#w3-user-facing-api--decorators-instrumentation-wrappers), [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P9](traceml_pytorch_qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip), [P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook)
+**Reads cleanly with:** [W1](#w1-clipy-top-level-launcher-and-process-orchestrator), [W3](#w3-user-facing-api-decorators-instrumentation-wrappers), [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), [P9](pytorch-qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip), [P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step), [P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook)
 
 **Origin:** the last leaf of the architecture map. After the diagram-following walkthroughs (CLI → runtime → patches → samplers → DB → transport → aggregator → display → summaries), the integrations sit off to the side: they're **adapters** that translate two popular framework callback APIs into TraceML's own user API (W3). Reading them exposes how thin the framework-coupling layer actually is — and what assumptions break when a framework owns the training loop.
 
 ### Short answer
 
-Both files are tiny (`huggingface.py` is 84 lines, `lightning.py` 170) because they don't *do* instrumentation — they *wire* TraceML's existing user API ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers): `trace_step`, `trace_model_instance`, `timed_region`, `TraceState.step`) into each framework's lifecycle hooks. HuggingFace gets a `Trainer` subclass that overrides `training_step`. Lightning gets a `Callback` whose methods bracket the forward / backward / optimizer phases. Both honor `TRACEML_DISABLED=1` as a hard short-circuit.
+Both files are tiny (`huggingface.py` is 84 lines, `lightning.py` 170) because they don't *do* instrumentation — they *wire* TraceML's existing user API ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers): `trace_step`, `trace_model_instance`, `timed_region`, `TraceState.step`) into each framework's lifecycle hooks. HuggingFace gets a `Trainer` subclass that overrides `training_step`. Lightning gets a `Callback` whose methods bracket the forward / backward / optimizer phases. Both honor `TRACEML_DISABLED=1` as a hard short-circuit.
 
 The interesting design tension: HF gives you one big "training_step" hook that wraps the whole step, while Lightning fires fine-grained callbacks (`on_train_batch_start`, `on_before_backward`, `on_after_backward`, `on_before_optimizer_step`, `on_before_zero_grad`, `on_train_batch_end`). The HF adapter therefore relies on TraceML's monkey-patches inside `trace_step` to capture forward/backward/optimizer breakdowns; the Lightning adapter uses the framework's own boundary callbacks instead, since they're already there. Two opposite strategies, same dashboard output.
 
@@ -2504,14 +2504,14 @@ Classic optional-dependency trick. `transformers` is in the `[hf]` extra of `pyp
 TRACEML_DISABLED = os.environ.get("TRACEML_DISABLED") == "1"
 ```
 
-Captured **once at import**, not per-call. Cheap, but means flipping the env var mid-process won't take effect. That's fine: `TRACEML_DISABLED` is set by `cli.py`'s `--disable-traceml` path ([W1](#w1-clipy--top-level-launcher-and-process-orchestrator), step 3 of `launch_process`) before the process is spawned, so it's stable for the whole run.
+Captured **once at import**, not per-call. Cheap, but means flipping the env var mid-process won't take effect. That's fine: `TRACEML_DISABLED` is set by `cli.py`'s `--disable-traceml` path ([W1](#w1-clipy-top-level-launcher-and-process-orchestrator), step 3 of `launch_process`) before the process is spawned, so it's stable for the whole run.
 
 ##### `__init__` (lines 30–48)
 
 The only state added on top of vanilla `Trainer`:
 
 - `self.traceml_enabled` — runtime toggle, separate from the env var. Lets users pass `traceml_enabled=False` programmatically without touching env.
-- `self.traceml_kwargs` — the dict passed to `trace_model_instance`. If `None`, layer-level (Deep-Dive) hooks aren't attached at all; only step-level timing happens. If non-`None`, e.g. `{"track_layer_time": True, "track_layer_memory": True}`, those flags propagate into hook attachment ([W5](#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks)).
+- `self.traceml_kwargs` — the dict passed to `trace_model_instance`. If `None`, layer-level (Deep-Dive) hooks aren't attached at all; only step-level timing happens. If non-`None`, e.g. `{"track_layer_time": True, "track_layer_memory": True}`, those flags propagate into hook attachment ([W5](#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks)).
 - `self._traceml_hooks_attached` / `self._attached_model_id` — bookkeeping for the lazy-attach logic below.
 
 `super().__init__(*args, **kwargs)` is called first, so HF `Trainer` does its full setup (model, optimizer, accelerator, DDP wrap if applicable) before TraceML touches anything.
@@ -2544,16 +2544,16 @@ def training_step(self, model, inputs, *args, **kwargs):
 
 Three things worth slowing down on.
 
-**The bypass branch (lines 58–59).** When disabled, this is a literal `return super().training_step(...)` with **zero** TraceML code on the hot path. No try-blocks, no context managers, no closures. This matters for the "what's the overhead of TraceML?" benchmark in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator) — `--disable-traceml` should give an apples-to-apples baseline against vanilla HF `Trainer`. The `or` short-circuit means even `traceml_enabled=False` skips the with-block entirely.
+**The bypass branch (lines 58–59).** When disabled, this is a literal `return super().training_step(...)` with **zero** TraceML code on the hot path. No try-blocks, no context managers, no closures. This matters for the "what's the overhead of TraceML?" benchmark in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator) — `--disable-traceml` should give an apples-to-apples baseline against vanilla HF `Trainer`. The `or` short-circuit means even `traceml_enabled=False` skips the with-block entirely.
 
 **Lazy hook attachment (lines 61–78) — and *why* it's lazy.** The naive design would attach hooks in `__init__`. That fails for two reasons:
 
 1. **DDP / Accelerator wrapping happens after `Trainer.__init__`.** HF's `Trainer` uses `accelerate` to wrap the model in `DistributedDataParallel` or move it onto the GPU sometime between `__init__` and the first `training_step`. If you grab `self.model` at construction time, you get the *unwrapped* `nn.Module`, and your forward/backward hooks fire on a module that DDP no longer routes through — they silently never fire. The lazy approach grabs `model` from the `training_step` argument list, which is the real, post-wrap, post-`.to(device)` module that gradients actually flow through.
 2. **Identity check (`id(model) != self._attached_model_id`).** If something later swaps the model — `Trainer.train()` → `Trainer.evaluate()` → `Trainer.train()` can re-wrap, especially with Accelerator's `prepare()` — the old hooks point at a stale Python object that may or may not be reachable. The `id()` comparison detects this and re-attaches. Using `id()` (the CPython object address) instead of `is` is fine here because we're caching across calls; the actual `is` comparison would be just as good but `id()` reads slightly clearer in the conditional.
 
-This is the same lesson [P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) hammers on at the lower level: framework wrapping is not a one-time event, and instrumentation that wants to survive needs to re-resolve its target.
+This is the same lesson [P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) hammers on at the lower level: framework wrapping is not a one-time event, and instrumentation that wants to survive needs to re-resolve its target.
 
-**`with trace_step(model)` (line 80).** This is the single point of contact with the user API ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)). Inside `trace_step`, TraceML increments `TraceState.step`, opens a `timed_region` for total step time, marks the step boundary for memory tracking, and at exit flushes the step's events. The `super().training_step(...)` call inside the `with` block runs HF's normal forward + loss + backward (gradient_accumulation aware). Optimizer step and zero_grad happen *outside* this method in HF's `_inner_training_loop`, so HF's `training_step` covers forward+backward only — but the forward/backward/optimizer breakdown still works because **TraceML's monkey-patches** ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) intercept `optimizer.step()` and `loss.backward()` directly, regardless of where the framework calls them.
+**`with trace_step(model)` (line 80).** This is the single point of contact with the user API ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)). Inside `trace_step`, TraceML increments `TraceState.step`, opens a `timed_region` for total step time, marks the step boundary for memory tracking, and at exit flushes the step's events. The `super().training_step(...)` call inside the `with` block runs HF's normal forward + loss + backward (gradient_accumulation aware). Optimizer step and zero_grad happen *outside* this method in HF's `_inner_training_loop`, so HF's `training_step` covers forward+backward only — but the forward/backward/optimizer breakdown still works because **TraceML's monkey-patches** ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) intercept `optimizer.step()` and `loss.backward()` directly, regardless of where the framework calls them.
 
 That's the key insight: the HF adapter doesn't need to instrument optimizer-step manually because the patches do it globally. It only needs to mark the step boundary. Compare to Lightning below, where the adapter takes the opposite approach.
 
@@ -2574,7 +2574,7 @@ from traceml.utils.step_memory import StepMemoryTracker
 from traceml.utils.timing import (TimeEvent, TimeScope, record_event, timed_region)
 ```
 
-Compare to `huggingface.py`, which only imports `trace_step` and `trace_model_instance`. The Lightning adapter reaches *under* the user API into the timing primitives ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) — `timed_region`, `TimeEvent`, `record_event`, `StepMemoryTracker`, `flush_step_events`, and `TraceState.step` directly. This is because it's manually replicating what `trace_step` does internally, but spread across multiple callback methods. It's a layering compromise: the integration is technically reaching past the public API, but it has to, because Lightning's callback shape doesn't match a single `with` block.
+Compare to `huggingface.py`, which only imports `trace_step` and `trace_model_instance`. The Lightning adapter reaches *under* the user API into the timing primitives ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) — `timed_region`, `TimeEvent`, `record_event`, `StepMemoryTracker`, `flush_step_events`, and `TraceState.step` directly. This is because it's manually replicating what `trace_step` does internally, but spread across multiple callback methods. It's a layering compromise: the integration is technically reaching past the public API, but it has to, because Lightning's callback shape doesn't match a single `with` block.
 
 ##### Per-instance state (lines 29–37)
 
@@ -2610,7 +2610,7 @@ A few things light up reading this:
 
 **Optimizer timing is (before optimizer.step) → (before zero_grad).** Same trick: Lightning has no "on_after_optimizer_step", but `zero_grad` always runs after `step()` in Lightning's loop, so `on_before_zero_grad` is "after_optimizer_step" by another name.
 
-**`on_train_batch_end` as a safety net (lines 122–134).** The for-loop tearing down `_forward_ctx`, `_backward_ctx`, `_optimizer_ctx`, `_traceml_step_ctx` if any are still set. This catches edge cases: an exception inside backward, a custom `LightningModule` that doesn't follow the standard order, manual optimization mode (`self.automatic_optimization = False`). Each `__exit__(None, None, None)` is wrapped in `try/except Exception: pass` because a failing context-manager exit *must not* break training. This mirrors the fail-open philosophy in [W1](#w1-clipy--top-level-launcher-and-process-orchestrator): instrumentation is additive; an instrumentation bug should never blow up the user's run.
+**`on_train_batch_end` as a safety net (lines 122–134).** The for-loop tearing down `_forward_ctx`, `_backward_ctx`, `_optimizer_ctx`, `_traceml_step_ctx` if any are still set. This catches edge cases: an exception inside backward, a custom `LightningModule` that doesn't follow the standard order, manual optimization mode (`self.automatic_optimization = False`). Each `__exit__(None, None, None)` is wrapped in `try/except Exception: pass` because a failing context-manager exit *must not* break training. This mirrors the fail-open philosophy in [W1](#w1-clipy-top-level-launcher-and-process-orchestrator): instrumentation is additive; an instrumentation bug should never blow up the user's run.
 
 ##### Gradient accumulation (lines 136–154) — the subtle one
 
@@ -2639,7 +2639,7 @@ TraceState.step += 1
 flush_step_events(pl_module, TraceState.step)
 ```
 
-`TraceState.step` is a process-global counter ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)) that all samplers and patches read to attribute their events. The HF adapter doesn't increment it manually because `trace_step.__exit__` does. The Lightning adapter has to, because there's no single block whose exit naturally marks the step boundary. `flush_step_events` then drains the per-step ring buffer ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) to the database, attributed to this step number.
+`TraceState.step` is a process-global counter ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)) that all samplers and patches read to attribute their events. The HF adapter doesn't increment it manually because `trace_step.__exit__` does. The Lightning adapter has to, because there's no single block whose exit naturally marks the step boundary. `flush_step_events` then drains the per-step ring buffer ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) to the database, attributed to this step number.
 
 #### Comparison: two adapters, one user API
 
@@ -2647,31 +2647,31 @@ flush_step_events(pl_module, TraceState.step)
 |---|---|---|
 | Lines of code | 84 | 170 |
 | Step boundary | `with trace_step(model):` around `super().training_step` | `_traceml_step_ctx` enter/exit across two callbacks |
-| Forward/backward/optimizer breakdown | Captured by global monkey-patches ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) | Captured by callback brackets — no patches needed for these phases |
+| Forward/backward/optimizer breakdown | Captured by global monkey-patches ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) | Captured by callback brackets — no patches needed for these phases |
 | Layer-level (Deep-Dive) | Lazy `trace_model_instance(model, **kwargs)` on first step | Not implemented in this file (would need `on_train_start` + `pl_module`) |
 | Step counter advance | Inside `trace_step.__exit__` | Manual `TraceState.step += 1` |
 | Disable flag | `TRACEML_DISABLED` + `traceml_enabled` | `TRACEML_DISABLED` only |
 | Bypass overhead | True bare `super().training_step` call | Returns from each callback early, but six callbacks still fire |
 
-The two strategies converge on the same telemetry rows in the database. The difference is purely in *who* marks the boundaries: when the framework gives you a fine-grained callback API, use it (Lightning); when it gives you one big hook, lean on the global patches to fill in the structure (HF). Both rely on `TraceState.step`, the step-memory tracker, and the timing-event ring buffer underneath. That's the layering payoff — the integrations are thin because the user API ([W3](#w3-user-facing-api--decorators-instrumentation-wrappers)) and patch layer ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) already do all the heavy lifting.
+The two strategies converge on the same telemetry rows in the database. The difference is purely in *who* marks the boundaries: when the framework gives you a fine-grained callback API, use it (Lightning); when it gives you one big hook, lean on the global patches to fill in the structure (HF). Both rely on `TraceState.step`, the step-memory tracker, and the timing-event ring buffer underneath. That's the layering payoff — the integrations are thin because the user API ([W3](#w3-user-facing-api-decorators-instrumentation-wrappers)) and patch layer ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) already do all the heavy lifting.
 
 #### What's *not* here (and why that's interesting)
 
-- **No DDP-rank logic.** Both files are completely rank-agnostic. Telemetry routing to per-rank databases happens at the `TCPClient` / `RemoteDBStore` layer ([W7](#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport--tcp-serverclient-msgpack-framing-ddp-rank-detection)). The integrations just produce events; the rank tag is attached automatically downstream. This is a clean separation: the integrations stay simple, and a new framework adapter doesn't need to relearn DDP semantics.
-- **No CUDA-stream or event-pool code.** The CUDA-event pool and stream synchronization live in `utils/cuda_event_pool.py` ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)). `timed_region(..., scope="step")` and `trace_step(model)` decide internally whether to use GPU events. The integrations just call them.
-- **No state-dict / checkpoint logic.** This is worth highlighting because Lightning's `Callback` interface includes `state_dict` / `load_state_dict` for callback persistence across checkpoints ([P9](traceml_pytorch_qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip)). `TraceMLCallback` doesn't implement them — meaning if a user resumes from a checkpoint, `TraceState.step` resets to whatever the new process starts at, not the checkpointed step. Probably correct for now (TraceML is per-run, not cross-run), but a real gap if anyone wanted continuity across resume.
+- **No DDP-rank logic.** Both files are completely rank-agnostic. Telemetry routing to per-rank databases happens at the `TCPClient` / `RemoteDBStore` layer ([W7](#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8](#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection)). The integrations just produce events; the rank tag is attached automatically downstream. This is a clean separation: the integrations stay simple, and a new framework adapter doesn't need to relearn DDP semantics.
+- **No CUDA-stream or event-pool code.** The CUDA-event pool and stream synchronization live in `utils/cuda_event_pool.py` ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)). `timed_region(..., scope="step")` and `trace_step(model)` decide internally whether to use GPU events. The integrations just call them.
+- **No state-dict / checkpoint logic.** This is worth highlighting because Lightning's `Callback` interface includes `state_dict` / `load_state_dict` for callback persistence across checkpoints ([P9](pytorch-qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip)). `TraceMLCallback` doesn't implement them — meaning if a user resumes from a checkpoint, `TraceState.step` resets to whatever the new process starts at, not the checkpointed step. Probably correct for now (TraceML is per-run, not cross-run), but a real gap if anyone wanted continuity across resume.
 - **No `on_validation_*` hooks.** Validation passes aren't instrumented. The `step_time` metric only covers training. Adding a parallel set of validation rows would require duplicating the bracket logic across the validation callbacks.
 
 ### How this file maps to earlier Q&A concepts
 
-- **[Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → both adapters route through TraceML's hook layer indirectly: HF via `trace_model_instance` (which attaches PyTorch forward/backward hooks per module), Lightning by calling into `flush_step_events` which drains events that the global monkey-patches recorded. The integrations themselves are **callback-style** hooks (framework-defined), distinct from the **module-level** hooks ([P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook)) that fire per `nn.Module`.
-- **[P14](traceml_pytorch_qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → the Lightning adapter uses `on_before_backward` / `on_after_backward` to bracket exactly the backward pass. The HF adapter doesn't bracket backward directly; the monkey-patch on `Tensor.backward` ([W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works)) does it.
-- **[P48](traceml_pytorch_qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl` patches)** → why HF can stay one-method-thin: the global patches already capture forward/backward/optimizer; the adapter only needs to mark step boundaries.
-- **[P49](traceml_pytorch_qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → only triggered by `trace_model_instance` (HF lazy-attach path). Lightning's adapter doesn't attach module-level hooks here; layer-level Deep-Dive in Lightning would need a separate `on_train_start` implementation.
-- **[P9](traceml_pytorch_qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip) (state_dict)** → relevant by *absence*: Lightning callbacks can be checkpointed via `state_dict` / `load_state_dict`, but `TraceMLCallback` doesn't, so `TraceState.step` doesn't survive resume.
-- **[W1](#w1-clipy--top-level-launcher-and-process-orchestrator) (CLI)** → `TRACEML_DISABLED=1` set by `cli.py --disable-traceml`. Both adapters honor it as a literal short-circuit on the hot path for clean overhead-comparison benchmarks.
-- **[W3](#w3-user-facing-api--decorators-instrumentation-wrappers) (user API)** → HF imports just `trace_step` + `trace_model_instance`; Lightning imports the lower-level `timed_region`, `TimeEvent`, `record_event`, `StepMemoryTracker`, `TraceState`, `flush_step_events`. Two integration shapes against one stack.
-- **[W4](#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works) (patches)** → the reason HF works without per-phase callbacks: the global patches catch optimizer.step / loss.backward regardless of who calls them.
+- **[Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) (hooks/injection)** → both adapters route through TraceML's hook layer indirectly: HF via `trace_model_instance` (which attaches PyTorch forward/backward hooks per module), Lightning by calling into `flush_step_events` which drains events that the global monkey-patches recorded. The integrations themselves are **callback-style** hooks (framework-defined), distinct from the **module-level** hooks ([P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook)) that fire per `nn.Module`.
+- **[P14](pytorch-qa.md#p14-what-does-lossbackward-actually-do-step-by-step) (loss.backward)** → the Lightning adapter uses `on_before_backward` / `on_after_backward` to bracket exactly the backward pass. The HF adapter doesn't bracket backward directly; the monkey-patch on `Tensor.backward` ([W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works)) does it.
+- **[P48](pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks) (`_call_impl` patches)** → why HF can stay one-method-thin: the global patches already capture forward/backward/optimizer; the adapter only needs to mark step boundaries.
+- **[P49](pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) (hook firing order)** → only triggered by `trace_model_instance` (HF lazy-attach path). Lightning's adapter doesn't attach module-level hooks here; layer-level Deep-Dive in Lightning would need a separate `on_train_start` implementation.
+- **[P9](pytorch-qa.md#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip) (state_dict)** → relevant by *absence*: Lightning callbacks can be checkpointed via `state_dict` / `load_state_dict`, but `TraceMLCallback` doesn't, so `TraceState.step` doesn't survive resume.
+- **[W1](#w1-clipy-top-level-launcher-and-process-orchestrator) (CLI)** → `TRACEML_DISABLED=1` set by `cli.py --disable-traceml`. Both adapters honor it as a literal short-circuit on the hot path for clean overhead-comparison benchmarks.
+- **[W3](#w3-user-facing-api-decorators-instrumentation-wrappers) (user API)** → HF imports just `trace_step` + `trace_model_instance`; Lightning imports the lower-level `timed_region`, `TimeEvent`, `record_event`, `StepMemoryTracker`, `TraceState`, `flush_step_events`. Two integration shapes against one stack.
+- **[W4](#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works) (patches)** → the reason HF works without per-phase callbacks: the global patches catch optimizer.step / loss.backward regardless of who calls them.
 
 ### Concepts introduced
 
@@ -2685,7 +2685,7 @@ Adapter pattern (framework-callback → user-API), optional-dependency import sh
 
 **Date:** YYYY-MM-DD
 **File:** [path/to/file.py](path/to/file.py) (line count)
-**Reads cleanly with:** [Q-numbers from traceml_learning_qa.md, as clickable links]
+**Reads cleanly with:** [Q-numbers from learning-qa.md, as clickable links]
 **Origin:** (optional — the question or context that led to this walkthrough)
 
 ### Short answer
@@ -2698,7 +2698,7 @@ Adapter pattern (framework-callback → user-API), optional-dependency import sh
 Section-by-section reading with line refs and cross-links to Q&A.
 
 ### How this file maps to earlier Q&A concepts
-- **[Q?](traceml_learning_qa.md#anchor) (topic)** → ...
+- **[Q?](learning-qa.md#anchor) (topic)** → ...
 
 ### Concepts introduced
 

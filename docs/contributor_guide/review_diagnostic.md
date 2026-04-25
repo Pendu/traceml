@@ -3,7 +3,7 @@
 > Internal contributor guide. Audience: one trusted co-founder / new engineer
 > reviewing TraceML PRs. Companion to `add_diagnostic.md`. Not for public docs.
 
-This guide teaches you how to review a PR that adds or modifies a diagnostic verdict in `src/traceml/diagnostics/` (and its summary adapter under `aggregator/summaries/`). It assumes you have already read `add_diagnostic.md` (the author's guide) and have a working mental model of [W11](../deep_dive/code-walkthroughs.md#w11-summaries--diagnostics--end-of-run-analysis). The seven-step workflow in §1 is the same meta-pattern used by `review_patch.md`; only §3 onward is diagnostic-specific.
+This guide teaches you how to review a PR that adds or modifies a diagnostic verdict in `src/traceml/diagnostics/` (and its summary adapter under `aggregator/summaries/`). It assumes you have already read `add_diagnostic.md` (the author's guide) and have a working mental model of [W11](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis). The seven-step workflow in §1 is the same meta-pattern used by `review_patch.md`; only §3 onward is diagnostic-specific.
 
 ---
 Feature type: diagnostic verdict
@@ -37,7 +37,7 @@ This same seven-step shape applies to patch PRs (`review_patch.md`), sampler PRs
 
 The first thing you do with a diagnostic PR is **not** open the engine diff. Open three things:
 
-- [W11 §"Summaries + diagnostics"](../deep_dive/code-walkthroughs.md#w11-summaries--diagnostics--end-of-run-analysis) — the end-of-run code walkthrough. Diagnostics live inside the summary subsystem's call graph; if you don't have that graph in cache you will misread the adapter layer.
+- [W11 §"Summaries + diagnostics"](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis) — the end-of-run code walkthrough. Diagnostics live inside the summary subsystem's call graph; if you don't have that graph in cache you will misread the adapter layer.
 - `traceml_why.md` §3 — the taxonomy of wasted GPU time. Every verdict the codebase will ever ship maps to one row of that table. Identify the row this PR is claiming.
 - `add_diagnostic.md` §1.1 — the "what is a diagnostic" definition. The single load-bearing claim is "diagnostics are *interpretations* of metrics, not metrics." If the PR is shipping a metric and labelling it a verdict, anchor on this and push back early.
 
@@ -562,7 +562,7 @@ The two existing engines are the worked examples. Mapping them to the seven step
 
 | Step | Where to look |
 |---|---|
-| 1. Anchor | `add_diagnostic.md` §1, [W11](../deep_dive/code-walkthroughs.md#w11-summaries--diagnostics--end-of-run-analysis), `traceml_why.md` §3 |
+| 1. Anchor | `add_diagnostic.md` §1, [W11](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis), `traceml_why.md` §3 |
 | 2. Consistency table | §3.2 of this guide (the table itself) |
 | 3. Failure modes | §4 of this guide (12 categories) |
 | 4. Meta-questions | §5 of this guide (4 angles) |

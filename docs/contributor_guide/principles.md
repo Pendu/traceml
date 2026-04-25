@@ -36,7 +36,7 @@ These are the design principles in [traceml/docs/developer_guide/architecture.md
   TCPServer  →  RemoteDBStore (rank-aware)  →  SQLite projection writer  →  renderer  →  display driver
 ```
 
-For the full station-by-station walkthrough — what each box does, what the failure modes are, which file owns which transition — see [pipeline_walkthrough.md](pipeline_walkthrough.md). For depth, see [W6](../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows) through [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql).
+For the full station-by-station walkthrough — what each box does, what the failure modes are, which file owns which transition — see [pipeline_walkthrough.md](pipeline_walkthrough.md). For depth, see [W6](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows) through [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 
 ---
 
@@ -174,8 +174,8 @@ Use these terms consistently in code, comments, commit messages, and PR descript
 
 ## 11. Cross-references
 
-- **Project rules:** [../../../CLAUDE.md](../../../CLAUDE.md) (repo root) and [../../CLAUDE.md](../../CLAUDE.md) (traceml package — line length 79, no `Co-Authored-By` trailers, etc.).
-- **Pipeline:** [pipeline_walkthrough.md](pipeline_walkthrough.md) (condensed) and [W6](../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows) → [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql) (deep).
+- **Project rules:** [`CLAUDE.md`](https://github.com/Pendu/traceml/blob/main/CLAUDE.md) (traceml package — line length 79, no `Co-Authored-By` trailers, etc.).
+- **Pipeline:** [pipeline_walkthrough.md](pipeline_walkthrough.md) (condensed) and [W6](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows) → [W10](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql) (deep).
 - **Architecture:** [traceml/docs/developer_guide/architecture.md](../developer_guide/architecture.md).
 - **Why these constraints exist:** [traceml_why.md](../deep_dive/why.md) §6 (the four claims) and §7 (limitations).
 

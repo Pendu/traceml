@@ -1431,9 +1431,9 @@ this shape."
   data flow (where each wire surface lives in the pipeline).
 - [`traceml_why.md`](../deep_dive/why.md) §6.4 —
   longitudinal regression detection (strategic context).
-- [W6](../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows)
+- [W6](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows)
   through
-  [W11](../deep_dive/code-walkthroughs.md#w11-summaries--diagnostics--end-of-run-analysis)
+  [W11](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis)
   — deep walkthroughs of each wire-affecting subsystem.
 
 ---

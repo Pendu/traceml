@@ -39,7 +39,7 @@ Both files live under `src/traceml/integrations/`, which has an empty `__init__.
 
 - **Not a sampler.** Samplers poll a data source on every runtime tick (see `add_sampler.md`). Integrations do not poll; they react to framework callbacks. If you find yourself writing a `sample()` method inside an integration file, you are in the wrong subsystem.
 - **Not a patch.** Patches mutate `nn.Module.__call__`, `Tensor.backward`, `DataLoader.__iter__`, etc. globally for every PyTorch user (see `add_patch.md`). Integrations never monkey-patch the framework's classes. They use the framework's documented hook surface — `Callback` for Lightning, subclassing `Trainer` for HuggingFace.
-- **Not a hook on `nn.Module`.** Per-layer hooks attach via `register_forward_hook` / `register_full_backward_hook` and are managed by `trace_model_instance` ([W5](../deep_dive/code-walkthroughs.md#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks)). Integrations route to `trace_model_instance`; they never attach hooks themselves.
+- **Not a hook on `nn.Module`.** Per-layer hooks attach via `register_forward_hook` / `register_full_backward_hook` and are managed by `trace_model_instance` ([W5](../deep_dive/code-walkthroughs.md#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks)). Integrations route to `trace_model_instance`; they never attach hooks themselves.
 - **Not a decorator.** `trace_time` (in `instrumentation.py:245`) is for user-defined regions. Integrations are zero-code; they don't decorate user functions.
 
 ### The four lifecycle events every integration must handle
@@ -55,7 +55,7 @@ The HuggingFace integration takes the high-level path: it wraps the parent `trai
 
 ### The fail-open contract (not optional)
 
-A framework integration must **never break training**. If the framework changes a hook signature, if `trace_model_instance` raises because the model isn't a real `nn.Module`, if `flush_step_events` chokes — the integration logs to stderr with `[TraceML]` prefix and lets the user's training step proceed unmodified. See [principles.md](principles.md) §1 for the cross-cutting fail-open rule; do not re-derive it.
+A framework integration must **never break training**. If the framework changes a hook signature, if `trace_model_instance` raises because the model isn't a real `nn.Module`, if `flush_step_events` chokes — the integration logs to stderr with `[TraceML]` prefix and lets the user's training step proceed unmodified. See [Principles](principles.md) §1 for the cross-cutting fail-open rule; do not re-derive it.
 
 The corollary: **every integration must honor `TRACEML_DISABLED=1`** as the universal bypass. Users who want to ship code with the integration permanently wired in but disable telemetry on a particular run set `TRACEML_DISABLED=1` and expect the integration to be functionally a no-op. Both existing integrations early-return on this flag at the top of every public method.
 
@@ -651,7 +651,7 @@ Integrations are at the edge of the hot path — they intercept every batch boun
 | Step-end callback (`on_train_batch_end`) | < 100 µs | Close contexts, record memory tracker, increment counter, flush events. |
 | Model-attach on first step (deep profile) | < 50 ms once | Walks the model graph and registers per-layer hooks. One-time cost. |
 
-See [principles.md](principles.md) §5 for the cross-cutting overhead budget.
+See [Principles](principles.md) §5 for the cross-cutting overhead budget.
 
 ### Hot-path rules
 
@@ -848,7 +848,7 @@ Numbered, with symptom and fix.
 14. [ ] Smoke test: minimal example that uses the framework + the integration, completes, produces telemetry. Documented in PR description with command and expected output.
 15. [ ] Smoke test against framework version range — at least the oldest supported and the latest released.
 16. [ ] CHANGELOG entry: `Added: <framework> integration via traceml.integrations.<name>`.
-17. [ ] [principles.md](principles.md) compliance verified: fail-open, overhead budget, wire-compat, logging convention.
+17. [ ] [Principles](principles.md) compliance verified: fail-open, overhead budget, wire-compat, logging convention.
 18. [ ] `pre-commit run --all-files` clean.
 19. [ ] Commit message short, single-line, no `Co-Authored-By` trailers.
 

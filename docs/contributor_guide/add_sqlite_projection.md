@@ -52,7 +52,7 @@ aggregator: TCPServer.poll()
                 renderer (next tick): sqlite3.connect(db_path).execute(...)
 ```
 
-Cross-link: full ingest path is [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes); the end-to-end pipeline is `pipeline_walkthrough.md`. Don't re-derive it here.
+Cross-link: full ingest path is [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes); the end-to-end pipeline is `pipeline_walkthrough.md`. Don't re-derive it here.
 
 ### Why projection writers exist (vs. just storing the payload as JSON)
 
@@ -92,7 +92,7 @@ WAL means:
 - **Many readers in parallel** — every renderer opens its own short-lived connection per `_compute()` call (see `add_renderer.md` §7 "Thread safety"). Readers do not block the writer.
 - **No `with conn:` blocks in the writer** — `_write_flush_rows` issues `BEGIN;` / `COMMIT;` explicitly because `isolation_level=None` is autocommit.
 
-Cross-link: [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes) covers the WAL setup in detail.
+Cross-link: [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes) covers the WAL setup in detail.
 
 ---
 
@@ -514,7 +514,7 @@ The exception is schema introspection (`PRAGMA table_info(...)`) for the migrati
 
 ### 7.4. Idempotency / dedup
 
-Don't add `INSERT OR REPLACE` or `INSERT ... ON CONFLICT`. The upstream sender (`DBIncrementalSender`) tracks `_last_sent_seq` and guarantees no row is sent twice under normal operation (see [W7](../deep_dive/code-walkthroughs.md#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping)). Adding "smart" dedup at the writer hides upstream bugs and makes the dispatcher's behavior harder to reason about.
+Don't add `INSERT OR REPLACE` or `INSERT ... ON CONFLICT`. The upstream sender (`DBIncrementalSender`) tracks `_last_sent_seq` and guarantees no row is sent twice under normal operation (see [W7](../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping)). Adding "smart" dedup at the writer hides upstream bugs and makes the dispatcher's behavior harder to reason about.
 
 If duplicate rows show up in the DB, the bug is upstream, not in your writer.
 
@@ -805,7 +805,7 @@ If you're adding a writer for one of these samplers, the migration is a two-PR s
 1. Add the projection writer (this guide). Rows now land in both `RemoteDBStore` (legacy) and SQLite (new). No renderer change.
 2. Port the renderer to read SQLite. Drop the sampler from `_REMOTE_STORE_SAMPLERS`.
 
-Cross-link: the live-store path is in [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes) and `add_renderer.md` §7.
+Cross-link: the live-store path is in [W9](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes) and `add_renderer.md` §7.
 
 ### 11.2. Multi-rank join contract
 

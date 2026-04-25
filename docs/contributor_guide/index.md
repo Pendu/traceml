@@ -111,7 +111,7 @@ The voice is imperative and opinionated. "Subclass `BaseSampler`. Pass two strin
 
 ## Cross-references
 
-- **Project rules:** [../../../CLAUDE.md](../../../CLAUDE.md) (repo root) and [../../CLAUDE.md](../../CLAUDE.md) (traceml package).
+- **Project rules:** [`CLAUDE.md`](https://github.com/Pendu/traceml/blob/main/CLAUDE.md) (traceml package).
 - **Learning archive:** [traceml_learning_qa.md](../deep_dive/learning-qa.md), [traceml_pytorch_qa.md](../deep_dive/pytorch-qa.md), [traceml_learning_code_walkthroughs.md](../deep_dive/code-walkthroughs.md).
 - **Why this product exists:** [traceml_why.md](../deep_dive/why.md).
 - **PR #87 reference review:** [Notes/PR_87_review_through_walkthroughs.md](../deep_dive/pr_reviews/pr-87-h2d-timing.md). The single most important reference for `add_patch.md` and `review_patch.md`.

@@ -41,7 +41,7 @@ Before the per-file walkthrough, here's the whole PR rendered onto the same thre
 
 - The four review change-requests from [§3 below](#3-issues-re-framed) — D2D misclassification, `Module.to` overcount, docstring inaccuracy, `wrap_h2d` race window. Those are *bugs to fix*, not architectural facts about what ships.
 - Per-file diff content beyond the section summaries. Read §1.1–§1.6 below for the line-by-line view.
-- Async GPU-event resolution mechanics (`try_resolve` polling, CUDA event pool, etc.). That all lives inside the "pipeline banner" abstraction; see [Appendix D](#appendix-d-pipeline-walkthrough--_traceml_internalh2d_time-end-to-end) Stations 1–3 if you want to trace one event end-to-end.
+- Async GPU-event resolution mechanics (`try_resolve` polling, CUDA event pool, etc.). That all lives inside the "pipeline banner" abstraction; see [Appendix D](#appendix-d-pipeline-walkthrough-_traceml_internalh2d_time-end-to-end) Stations 1–3 if you want to trace one event end-to-end.
 
 The diagram is a "what the PR ships" snapshot. The §1.1–§1.6 walkthroughs below are "what to think about each piece." Read the diagram first to orient, then drop into the per-file analysis.
 

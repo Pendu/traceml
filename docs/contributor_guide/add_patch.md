@@ -54,7 +54,7 @@ For the H2D case, `Module.to` was the wrong patch surface because **`nn.Module.t
 
 Heuristic: **patch when the target is one method on a class that every PyTorch user touches**, and the signal you want is "every call to that method, gated to inside `trace_step()`." Anything per-instance or per-layer is a hook. Anything per-user-function is a decorator.
 
-For the patches/timing-primitives full walkthrough see [W4](../deep_dive/code-walkthroughs.md#w4-patches--timing-primitives--how-zero-code-instrumentation-actually-works); for hooks, [W5](../deep_dive/code-walkthroughs.md#w5-per-layer-hooks--forwardbackward-time-and-memory-hooks); for the user-facing API, [W3](../deep_dive/code-walkthroughs.md#w3-user-facing-api--decorators-instrumentation-wrappers).
+For the patches/timing-primitives full walkthrough see [W4](../deep_dive/code-walkthroughs.md#w4-patches-timing-primitives-how-zero-code-instrumentation-actually-works); for hooks, [W5](../deep_dive/code-walkthroughs.md#w5-per-layer-hooks-forwardbackward-time-and-memory-hooks); for the user-facing API, [W3](../deep_dive/code-walkthroughs.md#w3-user-facing-api-decorators-instrumentation-wrappers).
 
 ### The instrumentation-site contract
 

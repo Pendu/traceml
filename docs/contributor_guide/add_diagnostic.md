@@ -113,7 +113,7 @@ Severity is mapped to color and prominence by the formatters. `confidence` is cu
 - `add_renderer.md` §3.1 — the `compute.py` layer that produces the metric objects diagnostics consume.
 - `traceml_why.md` §3 — the taxonomy of wasted GPU time. Six pathologies, each with frequency and severity. Use it as the design space.
 - `traceml_why.md` §6.3 — the "opinionated verdicts, not raw metrics" claim that justifies this whole subsystem.
-- [W11](../deep_dive/code-walkthroughs.md#w11-summaries--diagnostics--end-of-run-analysis) — the end-of-run code walkthrough.
+- [W11](../deep_dive/code-walkthroughs.md#w11-summaries-diagnostics-end-of-run-analysis) — the end-of-run code walkthrough.
 
 ### The fail-open contract
 

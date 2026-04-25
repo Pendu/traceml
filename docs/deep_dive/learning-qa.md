@@ -21,9 +21,9 @@ Categories so far (more can be added as topics emerge):
 - **Distributed Training** — rank, NCCL, all-reduce, DDP, collectives
 - **TraceML Architecture** — server-side/user-side, long-running, design rationale
 
-**PyTorch fundamentals & internals** (tensors, nn.Module, autograd, optimizers, DataLoader, dispatch, AMP, DDP/FSDP, compile, TraceML-relevant internals) live in their own companion document: [traceml_pytorch_qa.md](traceml_pytorch_qa.md). That file uses **P1, P2, …** numbering. Cross-references between files use clickable Markdown links.
+**PyTorch fundamentals & internals** (tensors, nn.Module, autograd, optimizers, DataLoader, dispatch, AMP, DDP/FSDP, compile, TraceML-relevant internals) live in their own companion document: [pytorch-qa.md](pytorch-qa.md). That file uses **P1, P2, …** numbering. Cross-references between files use clickable Markdown links.
 
-**Code walkthroughs** (file-by-file readings of the TraceML codebase) live in another companion: [traceml_learning_code_walkthroughs.md](traceml_learning_code_walkthroughs.md). That file uses **W1, W2, …** numbering. So the three files have independent number sequences (Q for concepts, P for PyTorch, W for walkthroughs) that never collide.
+**Code walkthroughs** (file-by-file readings of the TraceML codebase) live in another companion: [code-walkthroughs.md](code-walkthroughs.md). That file uses **W1, W2, …** numbering. So the three files have independent number sequences (Q for concepts, P for PyTorch, W for walkthroughs) that never collide.
 
 ---
 
@@ -32,17 +32,17 @@ Categories so far (more can be added as topics emerge):
 ### OS Basics
 
 - [Q1: What is a subprocess?](#q1-what-is-a-subprocess)
-- [Q5: OS fundamentals — kernel, process internals, pipes, sockets](#q5-os-fundamentals--kernel-process-internals-pipes-sockets)
-- [Q7: Spawning — fork, exec, and multiprocessing start methods](#q7-spawning--fork-exec-and-multiprocessing-start-methods)
+- [Q5: OS fundamentals — kernel, process internals, pipes, sockets](#q5-os-fundamentals-kernel-process-internals-pipes-sockets)
+- [Q7: Spawning — fork, exec, and multiprocessing start methods](#q7-spawning-fork-exec-and-multiprocessing-start-methods)
 
 ### Networking
 
 - [Q10: What is TCP concretely, and what's a port?](#q10-what-is-tcp-concretely-and-whats-a-port)
-- [Q14: What is RDMA / Infiniband and why does it matter for multi-node training?](#q14-what-is-rdma--infiniband-and-why-does-it-matter-for-multi-node-training)
+- [Q14: What is RDMA / Infiniband and why does it matter for multi-node training?](#q14-what-is-rdma-infiniband-and-why-does-it-matter-for-multi-node-training)
 
 ### Python Internals
 
-- [Q6: Python internals — bytecode, GIL, CPU-bound vs I/O-bound](#q6-python-internals--bytecode-gil-cpu-bound-vs-io-bound)
+- [Q6: Python internals — bytecode, GIL, CPU-bound vs I/O-bound](#q6-python-internals-bytecode-gil-cpu-bound-vs-io-bound)
 - [Q9: What are hooks, and what does "injecting hooks in-process" mean?](#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)
 
 ### CUDA & GPU
@@ -57,7 +57,7 @@ Categories so far (more can be added as topics emerge):
 
 ### PyTorch (separate file)
 
-See [traceml_pytorch_qa.md](traceml_pytorch_qa.md) — has P1–P52 covering tensor fundamentals, nn.Module mechanics, autograd, optimizers, DataLoader, CUDA dispatch path & memory, mixed precision (AMP), distributed (DDP/FSDP), eager vs graph mode (torch.compile), checkpointing, and PyTorch internals relevant to TraceML.
+See [pytorch-qa.md](pytorch-qa.md) — has P1–P52 covering tensor fundamentals, nn.Module mechanics, autograd, optimizers, DataLoader, CUDA dispatch path & memory, mixed precision (AMP), distributed (DDP/FSDP), eager vs graph mode (torch.compile), checkpointing, and PyTorch internals relevant to TraceML.
 
 ### TraceML Architecture
 
@@ -67,7 +67,7 @@ See [traceml_pytorch_qa.md](traceml_pytorch_qa.md) — has P1–P52 covering ten
 
 ### Code Walkthroughs (separate file)
 
-See [traceml_learning_code_walkthroughs.md](traceml_learning_code_walkthroughs.md) — currently has **W1: cli.py — top-level launcher and process orchestrator**.
+See [code-walkthroughs.md](code-walkthroughs.md) — currently has **W1: cli.py — top-level launcher and process orchestrator**.
 
 ---
 
@@ -104,9 +104,9 @@ Python has the **GIL** (Global Interpreter Lock): within one Python process, onl
 - **Symmetry of ranks**: with 4 GPUs, all 4 training processes are peers pushing to one external aggregator — no "special" rank hosting the aggregator thread.
 - **torchrun convention**: PyTorch's distributed launcher is itself a subprocess-spawning tool, so composing with it means the CLI is naturally a subprocess orchestrator.
 
-*Concrete code.* In [traceml/src/traceml/cli.py](traceml/src/traceml/cli.py), search for `subprocess.Popen` — you'll find two spawn sites (aggregator, torchrun). Note `start_new_session=True`: this puts the child in a new process group, so a single `os.killpg` on Ctrl-C cleanly tears down the whole tree.
+*Concrete code.* In [traceml/src/traceml/cli.py](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py), search for `subprocess.Popen` — you'll find two spawn sites (aggregator, torchrun). Note `start_new_session=True`: this puts the child in a new process group, so a single `os.killpg` on Ctrl-C cleanly tears down the whole tree.
 
-**Related files:** [traceml/src/traceml/cli.py:397](traceml/src/traceml/cli.py#L397), [traceml/src/traceml/cli.py:424](traceml/src/traceml/cli.py#L424)
+**Related files:** [traceml/src/traceml/cli.py:397](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py#L397), [traceml/src/traceml/cli.py:424](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py#L424)
 **Concepts introduced:** process vs thread, GIL, fork + exec, copy-on-write memory, process group, signal propagation, `subprocess.Popen`
 
 ---
@@ -207,7 +207,7 @@ else:
 
 *How torchrun spawns training workers.* `torchrun` is itself a Python CLI. It fork+execs N Python subprocesses (one per `--nproc_per_node`). Before exec, it sets env vars `RANK`, `LOCAL_RANK`, `WORLD_SIZE`, `MASTER_ADDR`, `MASTER_PORT` in each child. Each child then imports PyTorch fresh, eventually calls `torch.distributed.init_process_group(...)`, reads those env vars, joins the collective. Every rank is a brand-new interpreter — no shared memory at startup — which is why env vars are the configuration mechanism.
 
-*Where this shows up in TraceML.* In [traceml/src/traceml/cli.py](traceml/src/traceml/cli.py), two `subprocess.Popen` calls:
+*Where this shows up in TraceML.* In [traceml/src/traceml/cli.py](https://github.com/Pendu/traceml/blob/main/src/traceml/cli.py), two `subprocess.Popen` calls:
 
 - One spawns `python -m traceml.aggregator_main ...` — fresh Python, fresh aggregator state.
 - One spawns `torchrun ... train.py` — which itself forks+execs N training ranks.
@@ -389,7 +389,7 @@ Consequences:
 
 Internally, `nn.Module.__call__` (the thing that runs when you do `out = model(x)`) checks for registered hooks and fires them around the actual forward. These hooks let you observe or modify activations/gradients without changing the model's class. Standard uses: visualizing activations, gradient clipping by layer, pruning, profiling.
 
-*How TraceML uses hooks.* In [traceml/src/traceml/decorators.py](traceml/src/traceml/decorators.py), `trace_model_instance(model)` walks the module tree and attaches forward and backward hooks on each layer. The hooks:
+*How TraceML uses hooks.* In [traceml/src/traceml/decorators.py](https://github.com/Pendu/traceml/blob/main/src/traceml/decorators.py), `trace_model_instance(model)` walks the module tree and attaches forward and backward hooks on each layer. The hooks:
 
 - Record the current time (via CUDA events for GPU work, or `time.perf_counter` for CPU).
 - Record peak memory allocation delta.
@@ -400,7 +400,7 @@ So when your training loop runs `loss = model(batch)`, PyTorch fires TraceML's h
 *What "injection" means here.* Two distinct mechanisms together:
 
 - **Hook injection** — registering `register_forward_hook` callbacks on your model *instance* at runtime. You call `trace_model_instance(model)` once; from then on your specific model instance has TraceML hooks. You didn't modify the model's class definition; the hooks are attached to the instance in memory.
-- **Monkey-patching (a.k.a. patching)** — replacing a function/method at runtime. For example, TraceML's dataloader patching in [traceml/src/traceml/utils/](traceml/src/traceml/utils/) wraps `DataLoader.__iter__`. Your code still calls `for batch in loader:`, but `__iter__` now points to TraceML's wrapper, which calls the original iterator and adds timing around it.
+- **Monkey-patching (a.k.a. patching)** — replacing a function/method at runtime. For example, TraceML's dataloader patching in [traceml/src/traceml/utils/](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/) wraps `DataLoader.__iter__`. Your code still calls `for batch in loader:`, but `__iter__` now points to TraceML's wrapper, which calls the original iterator and adds timing around it.
 
 Why this is powerful for observability: the user doesn't need to refactor train.py. They just run `traceml run train.py` (or `import traceml`), and TraceML attaches itself — hooks on the model, patches on PyTorch's dataloader/optimizer.
 
@@ -548,7 +548,7 @@ You can have one CPU thread queueing work on multiple streams. You can also have
 
 *How TraceML uses streams and events.* TraceML's layer-time sampler records two CUDA events per layer per step: one before forward, one after. After the step completes (or asynchronously), TraceML calls `event.elapsed_time(start, end)` to get the actual GPU duration. **This is the only way to measure GPU time accurately** — `time.perf_counter()` measures host-side dispatch time, which is just "when did Python queue this work?", not "when did the GPU finish it?"
 
-The CUDA event pool in [traceml/src/traceml/utils/](traceml/src/traceml/utils/) reuses event objects across steps to avoid allocation cost. (Creating a CUDA event is cheap but not free, ~microseconds.)
+The CUDA event pool in [traceml/src/traceml/utils/](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/) reuses event objects across steps to avoid allocation cost. (Creating a CUDA event is cheap but not free, ~microseconds.)
 
 *Why this matters for understanding bottleneck diagnostics.*
 
@@ -606,7 +606,7 @@ Your training code reads these env vars to identify itself and to initialize `to
 
 *How TraceML uses rank.*
 
-- Each rank detects itself from env vars via [traceml/src/traceml/transport/distributed.py](traceml/src/traceml/transport/distributed.py).
+- Each rank detects itself from env vars via [traceml/src/traceml/transport/distributed.py](https://github.com/Pendu/traceml/blob/main/src/traceml/transport/distributed.py).
 - All telemetry frames are tagged with rank before being shipped over TCP.
 - The aggregator's `RemoteDBStore` is *rank-aware* — it keeps rank 0's data separate from rank 1's, etc. That's why the UI can show per-rank panels or aggregate across ranks as needed.
 
@@ -614,7 +614,7 @@ Your training code reads these env vars to identify itself and to initialize `to
 
 *OS tangent — does rank 0 really "own" GPU 0?* Not at the OS level. Any process with the right permissions can open any visible CUDA device. `torch.cuda.set_device(local_rank)` just sets a thread-local default for subsequent tensor allocations. You *could* have rank 3 use GPU 0 — DDP simply assumes you won't, because convention is cleaner and NCCL performance depends on a consistent mapping.
 
-**Related files:** [traceml/src/traceml/transport/distributed.py](traceml/src/traceml/transport/distributed.py), [traceml/src/traceml/database/remote_database_store.py](traceml/src/traceml/database/remote_database_store.py)
+**Related files:** [traceml/src/traceml/transport/distributed.py](https://github.com/Pendu/traceml/blob/main/src/traceml/transport/distributed.py), [traceml/src/traceml/database/remote_database_store.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/remote_database_store.py)
 **Concepts introduced:** rank (MPI heritage), world size, local rank vs global rank, DDP, all-reduce, NCCL, torchrun env vars, `DistributedSampler`, rendezvous, `if rank == 0` idiom
 
 ---
@@ -692,7 +692,7 @@ This is on the same order as a forward+backward at small/medium batch sizes, whi
 
 ## PyTorch (separate file)
 
-PyTorch fundamentals through internals live in a companion file: [traceml_pytorch_qa.md](traceml_pytorch_qa.md). It uses **P1, P2, …** numbering and currently has **P1–P52** covering:
+PyTorch fundamentals through internals live in a companion file: [pytorch-qa.md](pytorch-qa.md). It uses **P1, P2, …** numbering and currently has **P1–P52** covering:
 
 - Tensor fundamentals (P1–P6)
 - nn.Module mechanics (P7–P12)
@@ -706,7 +706,7 @@ PyTorch fundamentals through internals live in a companion file: [traceml_pytorc
 - Checkpointing & state (P46–P47)
 - PyTorch internals relevant to TraceML (P48–P52)
 
-Cross-references between the files: a P-entry in the PyTorch file links back to Q-entries here; new questions there get the next P-number. Walkthroughs of TraceML code live in [traceml_learning_code_walkthroughs.md](traceml_learning_code_walkthroughs.md) (W-numbers).
+Cross-references between the files: a P-entry in the PyTorch file links back to Q-entries here; new questions there get the next P-number. Walkthroughs of TraceML code live in [code-walkthroughs.md](code-walkthroughs.md) (W-numbers).
 
 ---
 
@@ -734,7 +734,7 @@ Cross-references between the files: a P-entry in the PyTorch file links back to 
 
 *RL analogy.* This is the same separation as IMPALA / Ape-X — distributed **actors** (user-side) push experience to a central **learner** (server-side). The actors don't care about storage or policy updates; the learner doesn't own environment interaction. Clean division of responsibility — and you already know why that design choice beats monolithic: decoupled failure modes, decoupled scaling, decoupled overhead budgets.
 
-**Related files:** [traceml/src/traceml/runtime/](traceml/src/traceml/runtime/) (user-side agent), [traceml/src/traceml/aggregator/](traceml/src/traceml/aggregator/) (server-side)
+**Related files:** [traceml/src/traceml/runtime/](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/) (user-side agent), [traceml/src/traceml/aggregator/](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/) (server-side)
 **Concepts introduced:** client-server pattern, in-process vs out-of-process, fail-open, overhead budget, rank symmetry
 
 ---
@@ -750,7 +750,7 @@ Cross-references between the files: a P-entry in the PyTorch file links back to 
 
 *What "long-running" implies for the design.*
 
-- **Persistent state**: the aggregator holds all telemetry in RAM (in deque-based tables at [traceml/src/traceml/database/database.py](traceml/src/traceml/database/database.py)). A short-lived process wouldn't need this — it would handle one request and discard state.
+- **Persistent state**: the aggregator holds all telemetry in RAM (in deque-based tables at [traceml/src/traceml/database/database.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database.py)). A short-lived process wouldn't need this — it would handle one request and discard state.
 - **Main event loop**: a long-running server has a forever-loop — "accept connection, read frame, store, repeat." It doesn't terminate on its own; it terminates when told to.
 - **Bounded memory**: if samples arrive at 1 Hz and you train for 7 days, you get ~600K samples per sampler per rank. Unbounded storage = OOM. TraceML's deques have a `maxlen`, so old rows evict automatically. This design is a *direct consequence* of being long-running.
 - **Signal handling**: long-running processes must respond cleanly to `SIGTERM` (Ctrl-C), `SIGHUP`, etc. They can't just "exit whenever" — they need to flush buffers, close sockets, write final summaries.
@@ -767,7 +767,7 @@ Cross-references between the files: a P-entry in the PyTorch file links back to 
 
 *Why the aggregator specifically is long-running:* it must observe the full training job end-to-end. A 7-day pretraining run needs continuous telemetry. If the aggregator restarted periodically, you'd get gaps in per-run views.
 
-**Related files:** [traceml/src/traceml/database/database.py](traceml/src/traceml/database/database.py) (bounded deques), [traceml/src/traceml/aggregator/](traceml/src/traceml/aggregator/) (event loop)
+**Related files:** [traceml/src/traceml/database/database.py](https://github.com/Pendu/traceml/blob/main/src/traceml/database/database.py) (bounded deques), [traceml/src/traceml/aggregator/](https://github.com/Pendu/traceml/blob/main/src/traceml/aggregator/) (event loop)
 **Concepts introduced:** long-running vs short-lived, event loop, bounded buffers, signal handling, `maxlen` deque
 
 ---

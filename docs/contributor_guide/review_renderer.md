@@ -55,8 +55,8 @@ If a file in the diff doesn't fit the table, that's a flag. Renderers that mutat
 
 After anchoring you should have: one schema file (skim — the contract), one compute file (read deeply — the bug surface), one renderer file (read tightly — the registration surface), plus 3–5 mechanical files. PR_87's collapse trick (one substantive file, the rest mechanical) applies here too.
 
-[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes
-[W10]: ../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql
+[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes
+[W10]: ../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql
 
 ---
 

@@ -58,9 +58,9 @@ If a file in the diff doesn't fit the table, that's a flag — the PR is doing s
 
 The point: **after anchoring, you should have one substantive file to read deeply, one mechanical registration edit to skim, and one new test file to grade against §4.** Anything else is suspicious.
 
-[W6]: ../deep_dive/code-walkthroughs.md#w6-samplers--schemas--turning-hook-events-into-structured-rows
-[W7]: ../deep_dive/code-walkthroughs.md#w7-database--sender--bounded-in-memory-store-and-incremental-tcp-shipping
-[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes
+[W6]: ../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows
+[W7]: ../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping
+[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes
 
 ---
 

@@ -3,8 +3,8 @@
 Personal Q&A log focused on PyTorch — fundamentals through internals — for understanding TraceML's instrumentation surface.
 
 **Started:** 2026-04-24
-**Companion file:** [traceml_learning_qa.md](traceml_learning_qa.md) — covers OS basics, networking, Python internals, CUDA, distributed training, TraceML architecture (Q1–Q15).
-**Walkthroughs:** [traceml_learning_code_walkthroughs.md](traceml_learning_code_walkthroughs.md) — file-by-file readings (W1+).
+**Companion file:** [learning-qa.md](learning-qa.md) — covers OS basics, networking, Python internals, CUDA, distributed training, TraceML architecture (Q1–Q15).
+**Walkthroughs:** [code-walkthroughs.md](code-walkthroughs.md) — file-by-file readings (W1+).
 
 ---
 
@@ -43,7 +43,7 @@ Sub-topics (more questions can be added to any of them):
 ### nn.Module mechanics
 - [P7: What is nn.Module exactly, and why is __call__ different from forward?](#p7-what-is-nnmodule-exactly-and-why-is-__call__-different-from-forward)
 - [P8: What's the difference between a Parameter, a Buffer, and a plain tensor attribute?](#p8-whats-the-difference-between-a-parameter-a-buffer-and-a-plain-tensor-attribute)
-- [P9: How does state_dict() work, and what does it preserve / what does it skip?](#p9-how-does-state_dict-work-and-what-does-it-preserve--what-does-it-skip)
+- [P9: How does state_dict() work, and what does it preserve / what does it skip?](#p9-how-does-state_dict-work-and-what-does-it-preserve-what-does-it-skip)
 - [P10: What does setting an nn.Module to training vs evaluation mode actually change at runtime?](#p10-what-does-setting-an-nnmodule-to-training-vs-evaluation-mode-actually-change-at-runtime-batchnorm-dropout-autograd-state)
 - [P11: What does model.to(device) do as it traverses the module tree?](#p11-what-does-modeltodevice-do-as-it-traverses-the-module-tree)
 - [P12: What's the difference between children(), modules(), named_modules()?](#p12-whats-the-difference-between-children-modules-named_modules)
@@ -65,14 +65,14 @@ Sub-topics (more questions can be added to any of them):
 
 ### DataLoader
 - [P24: What's the relationship between Dataset, Sampler, and DataLoader?](#p24-whats-the-relationship-between-dataset-sampler-and-dataloader)
-- [P25: How does num_workers > 0 actually work — threads, processes, IPC?](#p25-how-does-num_workers--0-actually-work--threads-processes-ipc)
+- [P25: How does num_workers > 0 actually work — threads, processes, IPC?](#p25-how-does-num_workers-0-actually-work-threads-processes-ipc)
 - [P26: What is pin_memory=True and when does it help?](#p26-what-is-pin_memorytrue-and-when-does-it-help)
 - [P27: What's collate_fn, and when do you need a custom one?](#p27-whats-collate_fn-and-when-do-you-need-a-custom-one)
 - [P28: What is persistent_workers, and what problem does it solve?](#p28-what-is-persistent_workers-and-what-problem-does-it-solve)
 - [P29: Why does DataLoader sometimes stall a training step, and what does TraceML look at to diagnose this?](#p29-why-does-dataloader-sometimes-stall-a-training-step-and-what-does-traceml-look-at-to-diagnose-this)
 
 ### CUDA dispatch path & memory model
-- [P30: How does y = torch.relu(x) get from Python all the way to a CUDA kernel?](#p30-how-does-y--torchreluxget-from-python-all-the-way-to-a-cuda-kernel-the-dispatcher-path)
+- [P30: How does y = torch.relu(x) get from Python all the way to a CUDA kernel?](#p30-how-does-y-torchrelux-get-from-python-all-the-way-to-a-cuda-kernel-the-dispatcher-path)
 - [P31: What is ATen, and what is the C++ dispatcher? Why does it matter for instrumentation?](#p31-what-is-aten-and-what-is-the-c-dispatcher-why-does-it-matter-for-instrumentation)
 - [P32: What does torch.cuda.synchronize() actually do, and why is it expensive?](#p32-what-does-torchcudasynchronize-actually-do-and-why-is-it-expensive)
 - [P33: How does PyTorch report GPU memory: memory_allocated, max_memory_allocated, the caching allocator?](#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator)
@@ -88,16 +88,16 @@ Sub-topics (more questions can be added to any of them):
 - [P39: What does DistributedDataParallel wrap around your model? How is gradient sync inserted into backward?](#p39-what-does-distributeddataparallel-wrap-around-your-model-how-is-gradient-sync-inserted-into-backward)
 - [P40: What is gradient bucketing, and what does bucket_cap_mb tune?](#p40-what-is-gradient-bucketing-and-what-does-bucket_cap_mb-tune)
 - [P41: What's the difference between DDP, FSDP, and ZeRO (DeepSpeed)?](#p41-whats-the-difference-between-ddp-fsdp-and-zero-deepspeed)
-- [P42: What happens if one rank hangs? How does NCCL detect / recover, and what's the role of NCCL_TIMEOUT?](#p42-what-happens-if-one-rank-hangs-how-does-nccl-detect--recover-and-whats-the-role-of-nccl_timeout)
+- [P42: What happens if one rank hangs? How does NCCL detect / recover, and what's the role of NCCL_TIMEOUT?](#p42-what-happens-if-one-rank-hangs-how-does-nccl-detect-recover-and-whats-the-role-of-nccl_timeout)
 
 ### Eager vs graph mode (torch.compile, JIT, fx)
 - [P43: What does torch.compile actually do? How is it different from TorchScript?](#p43-what-does-torchcompile-actually-do-how-is-it-different-from-torchscript-the-older-torchjitscript)
-- [P44: What are TorchDynamo, AOT autograd, and torch.fx — how do they relate?](#p44-what-are-torchdynamo-aot-autograd-and-torchfx--how-do-they-relate)
-- [P45: Does torch.compile break module hooks / TraceML's instrumentation? If so, what's the workaround?](#p45-does-torchcompile-break-module-hooks--tracemls-instrumentation-if-so-whats-the-workaround)
+- [P44: What are TorchDynamo, AOT autograd, and torch.fx — how do they relate?](#p44-what-are-torchdynamo-aot-autograd-and-torchfx-how-do-they-relate)
+- [P45: Does torch.compile break module hooks / TraceML's instrumentation? If so, what's the workaround?](#p45-does-torchcompile-break-module-hooks-tracemls-instrumentation-if-so-whats-the-workaround)
 
 ### Checkpointing & state
 - [P46: What is actually inside a saved checkpoint file (format, contents)?](#p46-what-is-actually-inside-a-saved-checkpoint-file-format-contents)
-- [P47: What does torch.save / torch.load use under the hood, and what are the security implications?](#p47-what-does-torchsave--torchload-use-under-the-hood-and-what-are-the-security-implications-around-loading-untrusted-checkpoints)
+- [P47: What does torch.save / torch.load use under the hood, and what are the security implications?](#p47-what-does-torchsave-torchload-use-under-the-hood-and-what-are-the-security-implications-around-loading-untrusted-checkpoints)
 
 ### PyTorch internals relevant to TraceML
 - [P48: What is _call_impl, and why does TraceML monkey-patch around it?](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)
@@ -277,7 +277,7 @@ The interesting part is step 3, which differs by source/destination pair.
 - So if the source is pageable (normal `malloc`'d) memory, the CUDA driver internally allocates a pinned staging buffer, memcpys host→staging synchronously on the CPU, *then* DMAs staging→device. The host-side CPU work blocks until the staging memcpy is done — your Python thread waits.
 - If the source is already pinned (`tensor.pin_memory()` or `DataLoader(pin_memory=True)`), the DMA engine reads directly from your buffer, and the Python call returns immediately while the GPU does the transfer in the background.
 
-This is why `tensor.cuda(non_blocking=True)` only actually overlaps with compute when paired with pinned memory. Without pinning, `non_blocking=True` is silently ignored. See [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) for the stream-level mechanics — the H2D copy gets queued on a stream, and you can use a separate stream from compute to overlap data prep with the previous step's training.
+This is why `tensor.cuda(non_blocking=True)` only actually overlaps with compute when paired with pinned memory. Without pinning, `non_blocking=True` is silently ignored. See [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) for the stream-level mechanics — the H2D copy gets queued on a stream, and you can use a separate stream from compute to overlap data prep with the previous step's training.
 
 ```python
 # pinned + non_blocking → real overlap
@@ -290,9 +290,9 @@ out = model(prev_x)                        # runs in parallel with the H2D
 
 This is why "GPU→CPU" copies show up in profilers as a frequent cause of host-side stalls. `loss.item()`, `tensor.cpu()`, `tensor.numpy()` all force a sync on the underlying CUDA stream.
 
-*GPU → GPU, same node.* `cudaMemcpyPeer` if the GPUs are peer-accessible (typically true within an NVLink/NVSwitch domain or even over PCIe). Async on the source stream. This is what `tensor.to('cuda:1')` does. NCCL `all-reduce` and DDP gradient sync use a more sophisticated path on top of this primitive — see [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier).
+*GPU → GPU, same node.* `cudaMemcpyPeer` if the GPUs are peer-accessible (typically true within an NVLink/NVSwitch domain or even over PCIe). Async on the source stream. This is what `tensor.to('cuda:1')` does. NCCL `all-reduce` and DDP gradient sync use a more sophisticated path on top of this primitive — see [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier).
 
-*GPU → GPU, different nodes.* Goes through host RAM and the network (Ethernet, Infiniband — see [Q14](traceml_learning_qa.md#q14-what-is-rdma--infiniband-and-why-does-it-matter-for-multi-node-training)). PyTorch's `.to()` doesn't directly do this — you'd use NCCL or `torch.distributed.send/recv`.
+*GPU → GPU, different nodes.* Goes through host RAM and the network (Ethernet, Infiniband — see [Q14](learning-qa.md#q14-what-is-rdma-infiniband-and-why-does-it-matter-for-multi-node-training)). PyTorch's `.to()` doesn't directly do this — you'd use NCCL or `torch.distributed.send/recv`.
 
 *The "is it async?" cheat sheet.*
 
@@ -590,7 +590,7 @@ When you write `self.linear = nn.Linear(10, 10)` inside `__init__`, the overridd
 
 - Calling `model.forward(x)` skips every hook and hook-driven instrumentation.
 - `torch.compile` traces through `__call__`, not bare `forward`.
-- TraceML's `_call_impl` patching gives finer control over timing than relying solely on public hooks (see [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) and [P48](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)).
+- TraceML's `_call_impl` patching gives finer control over timing than relying solely on public hooks (see [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) and [P48](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)).
 
 *Mental model.* `nn.Module` is a "smart container" + "callable wrapper": tracks parameters/buffers/children automatically, and `__call__` is the published entry point with `forward` as the user-overridable kernel. Hooks fire in `__call__`, never in bare `forward`.
 
@@ -911,7 +911,7 @@ each tensor op does two things: (1) computes the output value, and (2) appends a
 7. **Graph teardown.** After traversal, saved tensors held by each `grad_fn` are released. `retain_graph=True` skips this (see [P17](#p17-when-do-you-need-retain_graphtrue)).
 8. **Return to Python — but the GPU is still running.** `loss.backward()` returns when CPU-side bookkeeping is done and kernels are queued. On GPU workloads, the actual gradient compute is in flight on streams. `param.grad.cpu()` would force a sync. This is why "wrap `loss.backward()` with `time.perf_counter`" only measures host-side backward, not GPU-side completion.
 
-*Why TraceML uses CUDA events for backward timing.* Host-time measures dispatch/queueing. GPU-time (via CUDA events on the relevant stream — see [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) measures actual completion. TraceML records both to decompose backward into "Python/dispatch overhead" vs "true GPU compute time."
+*Why TraceML uses CUDA events for backward timing.* Host-time measures dispatch/queueing. GPU-time (via CUDA events on the relevant stream — see [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) measures actual completion. TraceML records both to decompose backward into "Python/dispatch overhead" vs "true GPU compute time."
 
 *Numerical accumulation detail.* When the same parameter is reached through multiple paths (shared embedding used twice), `AccumulateGrad` sums contributions before they land in `.grad`. This is the chain rule's sum-over-paths, the same mechanism used deliberately for gradient accumulation across microbatches ([P16](#p16-why-do-gradients-accumulate-by-default-when-is-that-useful-when-is-it-a-footgun)).
 
@@ -1545,7 +1545,7 @@ Same fix as inside the optimizer step. Anything walking `.grad` for monitoring (
 *The three roles, separated.*
 
 - **`Dataset`** (`torch.utils.data.Dataset`) — pure index-to-sample function. Implement `__getitem__(idx) -> sample` and `__len__() -> int`. Content-addressable storage for samples.
-- **`Sampler`** — iterator yielding indices. `SequentialSampler` yields `0, 1, 2, ...`. `RandomSampler` yields a permutation. `WeightedRandomSampler` samples per a weight vector. `DistributedSampler` yields a non-overlapping slice for the current rank (see [Q4](traceml_learning_qa.md#q4-what-is-a-gpu-rank)).
+- **`Sampler`** — iterator yielding indices. `SequentialSampler` yields `0, 1, 2, ...`. `RandomSampler` yields a permutation. `WeightedRandomSampler` samples per a weight vector. `DistributedSampler` yields a non-overlapping slice for the current rank (see [Q4](learning-qa.md#q4-what-is-a-gpu-rank)).
 - **`BatchSampler`** wraps a `Sampler` and yields *lists* of indices.
 - **`DataLoader`** — pull indices from the batch sampler → fetch each sample → run `collate_fn` → optionally pin and ship to GPU.
 
@@ -1583,7 +1583,7 @@ The sampler runs in the **main process**. Indices are cheap; the heavy lifting (
 
 **Date:** 2026-04-24
 
-**Short answer:** `num_workers=N` spawns **N child processes** (not threads — Python's GIL would defeat the purpose, see [Q6](traceml_learning_qa.md#q6-python-internals--bytecode-gil-cpu-bound-vs-io-bound)). The main process owns the sampler and one `multiprocessing.Queue` per worker for sending index batches; workers push completed mini-batches back through a single shared result queue. The start method (fork / spawn / forkserver, see [Q7](traceml_learning_qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods)) decides how those children come into existence — and on CUDA workloads it must not be plain `fork` after a CUDA context exists in the parent (see [Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)).
+**Short answer:** `num_workers=N` spawns **N child processes** (not threads — Python's GIL would defeat the purpose, see [Q6](learning-qa.md#q6-python-internals-bytecode-gil-cpu-bound-vs-io-bound)). The main process owns the sampler and one `multiprocessing.Queue` per worker for sending index batches; workers push completed mini-batches back through a single shared result queue. The start method (fork / spawn / forkserver, see [Q7](learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods)) decides how those children come into existence — and on CUDA workloads it must not be plain `fork` after a CUDA context exists in the parent (see [Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)).
 
 **Long answer:**
 
@@ -1640,7 +1640,7 @@ If `torch.cuda.init()` (or anything triggering context creation — `model.cuda(
 
 **Date:** 2026-04-24
 
-**Short answer:** `pin_memory=True` tells the DataLoader to allocate the returned batch's CPU storage in **page-locked (pinned) memory** instead of normal pageable RAM. Pinned memory has a fixed physical address the OS can't swap out, which lets the CUDA driver DMA-copy it directly to the GPU **asynchronously on a non-default CUDA stream** — overlapping the H2D transfer with GPU compute on the prior batch (see [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)). It only helps when you actually do `batch.to(device, non_blocking=True)` and have GPU work to overlap with.
+**Short answer:** `pin_memory=True` tells the DataLoader to allocate the returned batch's CPU storage in **page-locked (pinned) memory** instead of normal pageable RAM. Pinned memory has a fixed physical address the OS can't swap out, which lets the CUDA driver DMA-copy it directly to the GPU **asynchronously on a non-default CUDA stream** — overlapping the H2D transfer with GPU compute on the prior batch (see [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)). It only helps when you actually do `batch.to(device, non_blocking=True)` and have GPU work to overlap with.
 
 **Long answer:**
 
@@ -1833,9 +1833,9 @@ The art: figure out which term is large and chase only that.
 
 *What TraceML measures.*
 
-- **Step boundaries.** `trace_step()` from [traceml/src/traceml/decorators.py](traceml/src/traceml/decorators.py) marks each step. The step-time sampler records wall-clock per step.
+- **Step boundaries.** `trace_step()` from [traceml/src/traceml/decorators.py](https://github.com/Pendu/traceml/blob/main/src/traceml/decorators.py) marks each step. The step-time sampler records wall-clock per step.
 - **Dataloader iteration time.** TraceML monkey-patches `DataLoader.__iter__` (and the iterator's `__next__`). Each `next()` call timed. Time **between previous step's end and the next batch arriving** is the dataloader-wait term. Smoking gun for "dataloader-bound."
-- **Forward / backward / optimizer.** Layer-level forward and backward hooks ([Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)) record CUDA events at module boundaries — host time and GPU time both measured (see [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)). Optimizer step patched similarly.
+- **Forward / backward / optimizer.** Layer-level forward and backward hooks ([Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)) record CUDA events at module boundaries — host time and GPU time both measured (see [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)). Optimizer step patched similarly.
 - **GPU idle gap.** Derived from "wall-clock − summed GPU time." Growing GPU idle gap with stable forward/backward GPU time = dataloader-stall signature.
 - **System sampler.** Samples CPU and GPU utilization at fixed interval. Low GPU util + high worker-process CPU corroborates "workers can't keep up."
 
@@ -1845,7 +1845,7 @@ The art: figure out which term is large and chase only that.
 | --- | --- | --- |
 | Long `next(iter)` time, GPU idle, low GPU util | Dataloader-bound | Large dataloader-iter, stable fwd/bwd |
 | Long `optimizer.step()` host time | CPU-bound optimizer | Optimizer phase grows |
-| Long backward, GPU idle near end | All-reduce wait (DDP) | DDP sync phase grows; see [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) |
+| Long backward, GPU idle near end | All-reduce wait (DDP) | DDP sync phase grows; see [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier) |
 | Long forward host time, short GPU time | Python dispatch overhead | host >> GPU per layer |
 | First step of epoch slow only | Worker startup | Stall epoch-start, gone after; fix with `persistent_workers` |
 
@@ -1961,7 +1961,7 @@ TraceML lives in the top three rows: module hooks for layer visibility, monkey-p
 
 **Date:** 2026-04-24
 
-**Short answer:** `torch.cuda.synchronize()` blocks the calling **CPU thread** until **all previously queued work on all CUDA streams of the current device** has finished executing on the GPU. It is expensive because it forces a host↔device **synchronization barrier** that drains the asynchronous pipeline — destroying the CPU/GPU overlap that is the whole point of the [stream model](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread). Necessary for correct timing measurements, but should never appear in a hot loop in production.
+**Short answer:** `torch.cuda.synchronize()` blocks the calling **CPU thread** until **all previously queued work on all CUDA streams of the current device** has finished executing on the GPU. It is expensive because it forces a host↔device **synchronization barrier** that drains the asynchronous pipeline — destroying the CPU/GPU overlap that is the whole point of the [stream model](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread). Necessary for correct timing measurements, but should never appear in a hot loop in production.
 
 **Long answer:**
 
@@ -2097,7 +2097,7 @@ A subtle gotcha: `memory_allocated()` is cheap (allocator-internal counter) but 
 
 **Date:** 2026-04-24
 
-**Short answer:** `nvidia-smi` shows what the **NVIDIA driver** thinks a process owns — every byte of every block ever obtained via `cudaMalloc` and not yet returned, **plus** the **CUDA context's** own overhead (kernels, libraries, workspaces; see [Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). PyTorch's `memory_allocated()` shows only what live tensors hold. The gap: (1) the **caching allocator** keeping freed blocks for reuse, (2) **CUDA context overhead** (often 300 MB–1 GB just from loaded kernels), and (3) **fragmentation** — blocks the allocator owns but can't satisfy a request from. `nvidia-smi` is always >= `memory_reserved()` >= `memory_allocated()`.
+**Short answer:** `nvidia-smi` shows what the **NVIDIA driver** thinks a process owns — every byte of every block ever obtained via `cudaMalloc` and not yet returned, **plus** the **CUDA context's** own overhead (kernels, libraries, workspaces; see [Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)). PyTorch's `memory_allocated()` shows only what live tensors hold. The gap: (1) the **caching allocator** keeping freed blocks for reuse, (2) **CUDA context overhead** (often 300 MB–1 GB just from loaded kernels), and (3) **fragmentation** — blocks the allocator owns but can't satisfy a request from. `nvidia-smi` is always >= `memory_reserved()` >= `memory_allocated()`.
 
 **Long answer:**
 
@@ -2371,7 +2371,7 @@ Makes autograd raise at the op that produced the NaN, with stack trace. 10–50�
 
 **Step 3: bisect by layer.** Wrap suspect segments in `with torch.autocast(enabled=False):`. If NaN goes away, bug is in that segment. Common transformer culprits: attention numerator (pre-softmax logits), residual stream after several layers, output head.
 
-**Step 4: log min/max/has_nan per layer.** Forward hooks (see [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)):
+**Step 4: log min/max/has_nan per layer.** Forward hooks (see [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean)):
 
 ```python
 def watch(name):
@@ -2410,7 +2410,7 @@ The first layer whose `max` jumps to `~6e4` (fp16) or `~3e38` (bf16) or whose `n
 
 **Date:** 2026-04-24
 
-**Short answer:** `init_process_group` is the call that turns N independently-launched Python processes into a coordinated **process group** that can issue collective communications. It picks a **backend** (NCCL on GPU, Gloo on CPU), uses a **rendezvous mechanism** (TCP store, file, or env vars) so every rank discovers every other rank's address, and constructs the in-driver communicator handles needed for collectives. After it returns, every rank knows its own [rank](traceml_learning_qa.md#q4-what-is-a-gpu-rank), the world size, and how to talk to peers.
+**Short answer:** `init_process_group` is the call that turns N independently-launched Python processes into a coordinated **process group** that can issue collective communications. It picks a **backend** (NCCL on GPU, Gloo on CPU), uses a **rendezvous mechanism** (TCP store, file, or env vars) so every rank discovers every other rank's address, and constructs the in-driver communicator handles needed for collectives. After it returns, every rank knows its own [rank](learning-qa.md#q4-what-is-a-gpu-rank), the world size, and how to talk to peers.
 
 **Long answer:**
 
@@ -2418,11 +2418,11 @@ The first layer whose `max` jumps to `~6e4` (fp16) or `~3e38` (bf16) or whose `n
 
 *The launch precondition.* Before `init_process_group` runs, you've already started N processes (typically via `torchrun` or `torch.multiprocessing.spawn`). Each process has env vars: `RANK`, `WORLD_SIZE`, `MASTER_ADDR`, `MASTER_PORT`, `LOCAL_RANK`. Nothing in the cluster is connected yet — just N CPython interpreters with matching env vars.
 
-*Step 1: rendezvous.* `init_process_group` first runs a **rendezvous** so every rank discovers every other's address. Default `init_method="env://"` reads `MASTER_ADDR:MASTER_PORT` and connects to a `TCPStore` running on rank 0 (rank 0 binds the port; ranks 1..N-1 connect as clients). Each rank writes its address into the store; everyone reads everyone else's. After this barrier, every rank has the full address book. Alternative: `init_method="file://..."` for shared filesystem rendezvous. See [Q10](traceml_learning_qa.md#q10-what-is-tcp-concretely-and-whats-a-port).
+*Step 1: rendezvous.* `init_process_group` first runs a **rendezvous** so every rank discovers every other's address. Default `init_method="env://"` reads `MASTER_ADDR:MASTER_PORT` and connects to a `TCPStore` running on rank 0 (rank 0 binds the port; ranks 1..N-1 connect as clients). Each rank writes its address into the store; everyone reads everyone else's. After this barrier, every rank has the full address book. Alternative: `init_method="file://..."` for shared filesystem rendezvous. See [Q10](learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port).
 
 *Step 2: backend initialization.* With addresses known, the chosen **backend** initializes peer-to-peer communicators:
 
-- **NCCL** (GPU): each rank calls `ncclCommInitRank`, which exchanges unique IDs via the store, opens **NCCL channels** between every pair of GPUs that will participate, sets up shared-memory regions for intra-node peers, and (if available) opens RDMA queue pairs over Infiniband — see [Q14](traceml_learning_qa.md#q14-what-is-rdma--infiniband-and-why-does-it-matter-for-multi-node-training). After this, the NCCL communicator is a heavy in-driver object holding GPU buffers, CUDA streams, per-peer transport state. This is also why `init_process_group` is slow at scale — pairwise transports take seconds.
+- **NCCL** (GPU): each rank calls `ncclCommInitRank`, which exchanges unique IDs via the store, opens **NCCL channels** between every pair of GPUs that will participate, sets up shared-memory regions for intra-node peers, and (if available) opens RDMA queue pairs over Infiniband — see [Q14](learning-qa.md#q14-what-is-rdma-infiniband-and-why-does-it-matter-for-multi-node-training). After this, the NCCL communicator is a heavy in-driver object holding GPU buffers, CUDA streams, per-peer transport state. This is also why `init_process_group` is slow at scale — pairwise transports take seconds.
 - **Gloo** (CPU): pure TCP-based collectives, simpler, used for CPU tensors or small control messages.
 - **MPI**: thin wrapper over an installed MPI implementation; rare in pure PyTorch workflows.
 
@@ -2440,9 +2440,9 @@ The first layer whose `max` jumps to `~6e4` (fp16) or `~3e38` (bf16) or whose `n
 
 - `init_process_group` itself is a barrier — every rank blocks until everyone has joined. If one rank crashes before calling it, everyone else hangs. First place a misconfigured cluster reveals itself.
 - Call `torch.cuda.set_device(local_rank)` *before* `init_process_group` for NCCL. Otherwise NCCL picks the wrong GPU and you get cryptic "duplicate GPU" errors.
-- NCCL touches CUDA — this call initializes a CUDA context. Forking after this point is unsafe ([Q11](traceml_learning_qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)).
+- NCCL touches CUDA — this call initializes a CUDA context. Forking after this point is unsafe ([Q11](learning-qa.md#q11-what-is-a-cuda-context-and-why-is-it-fork-unsafe)).
 
-*Mental model.* `init_process_group` is like opening a multiplayer game lobby. Everyone joined with their handle (rank), the lobby figured out who's at which IP, the netcode allocated buffers, and after the handshake the game can issue synchronized actions ("everyone fire!" = all-reduce). What actually happens during a collective is its own story — see [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier).
+*Mental model.* `init_process_group` is like opening a multiplayer game lobby. Everyone joined with their handle (rank), the lobby figured out who's at which IP, the netcode allocated buffers, and after the handshake the game can issue synchronized actions ("everyone fire!" = all-reduce). What actually happens during a collective is its own story — see [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier).
 
 **Concepts introduced:** process group, rendezvous, `TCPStore`, `init_method` (env/file/store), backend (NCCL / Gloo / MPI), `MASTER_ADDR` / `MASTER_PORT`, `ncclCommInitRank`, NCCL channels, default process group, `new_group` for sub-groups, init-time barrier semantics, `set_device` ordering requirement.
 
@@ -2472,13 +2472,13 @@ for p in model.parameters():
         )
 ```
 
-Same hook concept covered in [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), on autograd graph nodes rather than `nn.Module` instances. The hook fires inside the autograd engine, immediately after `param.grad` gets its final value. From the user's perspective backward looks normal; the Reducer is an invisible co-process.
+Same hook concept covered in [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean), on autograd graph nodes rather than `nn.Module` instances. The hook fires inside the autograd engine, immediately after `param.grad` gets its final value. From the user's perspective backward looks normal; the Reducer is an invisible co-process.
 
 *Bucketing.* If DDP issued one all-reduce per parameter, a 1000-layer model would issue 1000 separate NCCL collectives — each with kernel launch overhead, latency, pipeline bubble. Instead, the Reducer groups consecutive parameters into **buckets** of fixed byte size (default 25 MB; tunable via `bucket_cap_mb`, P40). When `mark_variable_ready` is called for the last parameter in a bucket, the Reducer fires an **async** `all_reduce` on the bucket's flat buffer.
 
 *Why "reverse of forward" order.* Backward processes layers from loss back to input. Last layer's gradients ready first; first layer's last. DDP knows this and assigns parameters to buckets in **reverse construction order** (by default), so the first bucket to fill corresponds to layers near the output. That bucket can start its all-reduce while the rest of backward is still running. By the time input-side layers finish backward, several buckets' all-reduces are already in flight.
 
-*Stream-level overlap.* The all-reduce isn't just async at the Python level — it runs on a **dedicated NCCL stream** distinct from the compute stream. See [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread). Compute stream keeps running backward kernels; comm stream runs NCCL ring-reduce in parallel on the same GPU's SMs and on the network. CUDA events synchronize the two streams. This **compute-comm overlap** is the entire performance story of DDP — well-tuned DDP gets near-linear scaling on networks fast enough to keep up with backward.
+*Stream-level overlap.* The all-reduce isn't just async at the Python level — it runs on a **dedicated NCCL stream** distinct from the compute stream. See [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread). Compute stream keeps running backward kernels; comm stream runs NCCL ring-reduce in parallel on the same GPU's SMs and on the network. CUDA events synchronize the two streams. This **compute-comm overlap** is the entire performance story of DDP — well-tuned DDP gets near-linear scaling on networks fast enough to keep up with backward.
 
 *The finalize barrier.* DDP installs a final hook (via `prepare_for_backward` and `finalize_backward`) ensuring the optimizer step doesn't read `param.grad` before all bucket all-reduces have completed. So even though all-reduces run async, `optimizer.step()` always sees fully averaged gradients.
 
@@ -2605,7 +2605,7 @@ A profiler that doesn't distinguish compute from comm — or aggregates across r
 
 **Date:** 2026-04-24
 
-**Short answer:** All-reduce is a barrier (see [Q12](traceml_learning_qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) — every rank must arrive or none progress. If one rank hangs (stuck in a long forward, OOM, dead kernel, slow disk in dataloader), every other rank blocks at the next collective. NCCL has **no built-in recovery** — recovery means kill and restart. What it does have is a **watchdog thread** that monitors collective progress and aborts the process group after a configurable timeout. With `TORCH_NCCL_ASYNC_ERROR_HANDLING=1`, the abort surfaces as a Python exception with traceback rather than a silent indefinite hang. Diagnosing *which* rank is the slow one is hard precisely because the symptom shows up everywhere at once — and that's where per-rank visibility tools are essential.
+**Short answer:** All-reduce is a barrier (see [Q12](learning-qa.md#q12-what-is-nccl-all-reduce-and-why-is-it-a-barrier)) — every rank must arrive or none progress. If one rank hangs (stuck in a long forward, OOM, dead kernel, slow disk in dataloader), every other rank blocks at the next collective. NCCL has **no built-in recovery** — recovery means kill and restart. What it does have is a **watchdog thread** that monitors collective progress and aborts the process group after a configurable timeout. With `TORCH_NCCL_ASYNC_ERROR_HANDLING=1`, the abort surfaces as a Python exception with traceback rather than a silent indefinite hang. Diagnosing *which* rank is the slow one is hard precisely because the symptom shows up everywhere at once — and that's where per-rank visibility tools are essential.
 
 **Long answer:**
 
@@ -2837,7 +2837,7 @@ The integrated `torch.compile()` call wires all three together with sensible def
 
 **Date:** 2026-04-24
 
-**Short answer:** Yes, by default it can. When **TorchDynamo** traces past an `nn.Module` boundary, it inlines the module's forward into the captured FX graph and **bypasses `nn.Module._call_impl`** — which is exactly the entry point where PyTorch's hook firing logic lives (see [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) and [P48](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)). Forward/backward hooks registered on inner submodules silently stop firing inside the compiled region. Workarounds: mark instrumented modules as **opaque to Dynamo** (e.g., `torch.compiler.disable` on a function, or `torch._dynamo.disable` on a specific module), or skip `torch.compile` around the layers you're profiling. Because PyTorch's compile stack changes across releases, the exact API surface and behavior shift — this is the "PyTorch coupling" risk explicitly called out in TraceML's constraints.
+**Short answer:** Yes, by default it can. When **TorchDynamo** traces past an `nn.Module` boundary, it inlines the module's forward into the captured FX graph and **bypasses `nn.Module._call_impl`** — which is exactly the entry point where PyTorch's hook firing logic lives (see [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) and [P48](#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks)). Forward/backward hooks registered on inner submodules silently stop firing inside the compiled region. Workarounds: mark instrumented modules as **opaque to Dynamo** (e.g., `torch.compiler.disable` on a function, or `torch._dynamo.disable` on a specific module), or skip `torch.compile` around the layers you're profiling. Because PyTorch's compile stack changes across releases, the exact API surface and behavior shift — this is the "PyTorch coupling" risk explicitly called out in TraceML's constraints.
 
 **Long answer:**
 
@@ -3023,7 +3023,7 @@ That's the entire format. There is **no executable code path** during loading �
 
 - For **untrusted sources**: use `weights_only=True`, or insist on `safetensors`. Treat a `weights_only=False` deserialize of a network-sourced file the way you would treat `curl ... | sh`.
 - For **your own checkpoints** on **your own infra**, the risk is lower but not zero — a compromised teammate or writable shared filesystem is the same attack. `weights_only=True` plus `safetensors` for model weights and a small JSON sidecar for scalar metadata is a clean default.
-- Loading should ideally happen in a **subprocess** ([Q1](traceml_learning_qa.md#q1-what-is-a-subprocess)) with reduced privileges if you can't vouch for the source.
+- Loading should ideally happen in a **subprocess** ([Q1](learning-qa.md#q1-what-is-a-subprocess)) with reduced privileges if you can't vouch for the source.
 - File extensions are not formats. `.pt`, `.pth`, `.bin`, `.ckpt` are naming conventions; the actual format is determined by magic bytes.
 
 *Why this matters for TraceML.* TraceML produces telemetry, not weights, so it isn't directly serializing checkpoints. But anything in the TraceML pipeline that cross-process-shuttles Python objects faces the same code-capability question. TraceML's choice of **msgspec** for inter-process telemetry framing is the right call: msgspec is a typed, schema-driven binary format (msgpack family) that cannot deserialize arbitrary Python callables, so a hostile training process cannot pwn the aggregator by sending a crafted telemetry frame. A quiet but important security property of the architecture.
@@ -3054,7 +3054,7 @@ That's the entire format. There is **no executable code path** during loading �
 
 PyTorch then sets `__call__: Callable[..., Any] = _call_impl`. When your code does `out = model(x)`, Python's `__call__` protocol → `nn.Module.__call__` → `_call_impl` → all of the above. **`_call_impl` and `__call__` are the same function object on the class.**
 
-*What TraceML actually patches.* In [traceml/src/traceml/utils/patches/forward_auto_timer_patch.py](traceml/src/traceml/utils/patches/forward_auto_timer_patch.py) the code captures the original method object and replaces the class-level slot:
+*What TraceML actually patches.* In [traceml/src/traceml/utils/patches/forward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/forward_auto_timer_patch.py) the code captures the original method object and replaces the class-level slot:
 
 ```python
 _ORIG_MODULE_CALL = nn.Module.__call__
@@ -3066,7 +3066,7 @@ def patch_forward() -> None:
     nn.Module._traceml_forward_patched = True
 ```
 
-So TraceML doesn't patch `_call_impl` literally; it patches `__call__`, which **is** `_call_impl` (until you replace it). The new `_traceml_module_call` wraps `_ORIG_MODULE_CALL(self, *args, **kwargs)` in a `timed_region(...)` that emits CUDA start/end events, then delegates back. Same trick for backward in [traceml/src/traceml/utils/patches/backward_auto_timer_patch.py](traceml/src/traceml/utils/patches/backward_auto_timer_patch.py) (`torch.Tensor.backward` and `torch.autograd.backward`).
+So TraceML doesn't patch `_call_impl` literally; it patches `__call__`, which **is** `_call_impl` (until you replace it). The new `_traceml_module_call` wraps `_ORIG_MODULE_CALL(self, *args, **kwargs)` in a `timed_region(...)` that emits CUDA start/end events, then delegates back. Same trick for backward in [traceml/src/traceml/utils/patches/backward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/backward_auto_timer_patch.py) (`torch.Tensor.backward` and `torch.autograd.backward`).
 
 *Why patch instead of just using `register_forward_*_hook`?*
 
@@ -3085,9 +3085,9 @@ First `model(x)` increments depth 0 → 1 and starts a CUDA event; every nested 
 
 **2. Hook-firing overhead is included.** A `register_forward_pre_hook` callback fires *inside* `_call_impl`, *after* PyTorch has already started looking up sub-hooks, copying input tuples, etc. By patching `__call__`, TraceML's timer brackets `_call_impl` from the outside — captures the full cost the user's program pays per `model(x)` invocation, including PyTorch's hook dispatch machinery.
 
-**3. Hook re-entrance and exception safety.** If a user-registered `forward_pre_hook` raises, `_call_impl` aborts and the corresponding `forward_hook` never fires — leaving a `cuda.Event.record()` in your pre-hook unmatched. The `__call__` patch wraps in `try/finally` (`timed_region` does this in [traceml/src/traceml/utils/timing.py](traceml/src/traceml/utils/timing.py)), so start/end events are always paired even if user code or PyTorch internals throw.
+**3. Hook re-entrance and exception safety.** If a user-registered `forward_pre_hook` raises, `_call_impl` aborts and the corresponding `forward_hook` never fires — leaving a `cuda.Event.record()` in your pre-hook unmatched. The `__call__` patch wraps in `try/finally` (`timed_region` does this in [traceml/src/traceml/utils/timing.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py)), so start/end events are always paired even if user code or PyTorch internals throw.
 
-*The deeper "in-process" vs "public hook" tradeoff.* See [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) for the general split. For per-layer timing TraceML *does* use public hooks ([attach_layer_forward_time_hooks](traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py) registers `register_forward_pre_hook` + `register_forward_hook` on each leaf module). But for **whole-model forward** and **the global backward boundary**, the patch is the right tool: hooks observe individual modules; the patch observes the dispatch entry point itself.
+*The deeper "in-process" vs "public hook" tradeoff.* See [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) for the general split. For per-layer timing TraceML *does* use public hooks ([attach_layer_forward_time_hooks](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_time_hooks.py) registers `register_forward_pre_hook` + `register_forward_hook` on each leaf module). But for **whole-model forward** and **the global backward boundary**, the patch is the right tool: hooks observe individual modules; the patch observes the dispatch entry point itself.
 
 *Why this is fragile.* `_call_impl`'s body is internal PyTorch and has changed across versions. Patching `__call__` is forward-compatible because we delegate to whatever `_ORIG_MODULE_CALL` is at import time — but the assumption that `__call__` *can* be replaced on the class is still PyTorch-coupling risk.
 
@@ -3148,16 +3148,16 @@ This is why TraceML uses module hooks for *timing* and *activation memory* (prop
 
 **Multi-call modules.** If `forward()` calls the *same* submodule twice (weight sharing), its pre/post hooks fire **twice per outer call**. TraceML's per-layer time hook handles this with a **per-layer FIFO deque** — pre pushes a start record, post pops. Without FIFO pairing you'd get crossed timestamps.
 
-**The legacy `register_backward_hook` is broken.** Documented as deprecated; for some module types it fires with grad tensors that aren't actually the gradients of the module's inputs/outputs. **Always use `register_full_backward_hook` / `register_full_backward_pre_hook`** — TraceML does ([attach_layer_backward_memory_hooks](traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py) calls `register_full_backward_hook`).
+**The legacy `register_backward_hook` is broken.** Documented as deprecated; for some module types it fires with grad tensors that aren't actually the gradients of the module's inputs/outputs. **Always use `register_full_backward_hook` / `register_full_backward_pre_hook`** — TraceML does ([attach_layer_backward_memory_hooks](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py) calls `register_full_backward_hook`).
 
 *Why the order matters for TraceML's payloads.*
 
-- **Layer forward memory** ([LayerForwardMemoryHook](traceml/src/traceml/utils/hooks/layer_forward_memory_hook.py)) registers a `forward_hook` (post-only): inspects the output tensor and sums `numel * element_size`. Pre-hook can't see output yet.
-- **Layer forward time** ([layer_forward_time_hooks.py](traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py)) registers both pre and post: pre records `cpu_start` + acquires CUDA `start_event`; post records `cpu_end` + acquires `end_event`. The interval bounds per-call layer time. CUDA events queued asynchronously on the current stream ([Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) — pair correctly bounds GPU work without forcing host sync.
-- **Layer backward memory** ([LayerBackwardModuleHook](traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py)) registers `register_full_backward_hook` (post-only): sums bytes of `grad_output`.
-- **Model-level peak memory** ([model_forward_memory_hook.py](traceml/src/traceml/utils/hooks/model_forward_memory_hook.py)) uses both: pre calls `torch.cuda.reset_peak_memory_stats()`, post reads `torch.cuda.max_memory_allocated()`. Order is essential.
+- **Layer forward memory** ([LayerForwardMemoryHook](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_memory_hook.py)) registers a `forward_hook` (post-only): inspects the output tensor and sums `numel * element_size`. Pre-hook can't see output yet.
+- **Layer forward time** ([layer_forward_time_hooks.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_time_hooks.py)) registers both pre and post: pre records `cpu_start` + acquires CUDA `start_event`; post records `cpu_end` + acquires `end_event`. The interval bounds per-call layer time. CUDA events queued asynchronously on the current stream ([Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) — pair correctly bounds GPU work without forcing host sync.
+- **Layer backward memory** ([LayerBackwardModuleHook](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py)) registers `register_full_backward_hook` (post-only): sums bytes of `grad_output`.
+- **Model-level peak memory** ([model_forward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/model_forward_memory_hook.py)) uses both: pre calls `torch.cuda.reset_peak_memory_stats()`, post reads `torch.cuda.max_memory_allocated()`. Order is essential.
 
-*The autograd-graph subtlety.* Forward hooks fire *during* forward. Backward hooks are *registered* during forward (PyTorch wires them into the autograd graph as `grad_fn` callbacks) but *fire* later, when `loss.backward()` runs. This is why TraceML's [trace_step](traceml/src/traceml/instrumentation.py) wraps both: `forward_auto_timer()` + `backward_auto_timer()` are both active inside the `with` block, and the step boundary's `flush_step_events(model, step)` collects both forward and backward events into the same `StepTimeBatch`.
+*The autograd-graph subtlety.* Forward hooks fire *during* forward. Backward hooks are *registered* during forward (PyTorch wires them into the autograd graph as `grad_fn` callbacks) but *fire* later, when `loss.backward()` runs. This is why TraceML's [trace_step](https://github.com/Pendu/traceml/blob/main/src/traceml/instrumentation.py) wraps both: `forward_auto_timer()` + `backward_auto_timer()` are both active inside the `with` block, and the step boundary's `flush_step_events(model, step)` collects both forward and backward events into the same `StepTimeBatch`.
 
 *Mental model.* Forward hooks = breakpoints set on function entry/exit of each layer. Backward hooks = breakpoints inserted into a tape that the autograd engine plays in reverse. They share an interface but live in different execution contexts: forward is direct call stack, backward is autograd's worker traversing a DAG. "In registration order" applies to multiple hooks on the *same* module; "DFS pre/post" applies to ordering *across* nested modules.
 
@@ -3175,7 +3175,7 @@ This is why TraceML uses module hooks for *timing* and *activation memory* (prop
 
 *What `torch.profiler` does.* The modern profiler hooks into:
 
-- **The PyTorch dispatcher** ([P30/P31](#p30-how-does-y--torchreluxget-from-python-all-the-way-to-a-cuda-kernel-the-dispatcher-path)) via the **RecordFunction** mechanism — every dispatched op (`aten::mm`, `aten::add`) emits a record event with start/end times.
+- **The PyTorch dispatcher** ([P30/P31](#p30-how-does-y-torchrelux-get-from-python-all-the-way-to-a-cuda-kernel-the-dispatcher-path)) via the **RecordFunction** mechanism — every dispatched op (`aten::mm`, `aten::add`) emits a record event with start/end times.
 - **CUPTI** (CUDA Profiling Tools Interface) via **Kineto**, NVIDIA's library for collecting CUDA driver/runtime events: kernel launches, memcpy operations, stream sync points.
 - **Custom user ranges** via `with profiler.record_function("my_op"):`.
 
@@ -3183,11 +3183,11 @@ Output: a `prof` object you can print as a table, export as Chrome trace (`prof.
 
 The recommended usage is the **schedule API**: warm up for N steps, record M steps, repeat — because *recording every op for an entire training job is too expensive*. CUPTI synchronizes streams and adds per-kernel overhead measured in microseconds, which adds up for models doing 10k ops per step.
 
-*What TraceML does, by contrast.* From the architecture (and grounded in [trace_step](traceml/src/traceml/instrumentation.py) + [forward_auto_timer_patch](traceml/src/traceml/utils/patches/forward_auto_timer_patch.py)):
+*What TraceML does, by contrast.* From the architecture (and grounded in [trace_step](https://github.com/Pendu/traceml/blob/main/src/traceml/instrumentation.py) + [forward_auto_timer_patch](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/forward_auto_timer_patch.py)):
 
-- Wraps the **outermost forward and backward** with CUDA events from a [reusable event pool](traceml/src/traceml/utils/cuda_event_pool.py) — one start + one end per phase, not one per kernel.
+- Wraps the **outermost forward and backward** with CUDA events from a [reusable event pool](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/cuda_event_pool.py) — one start + one end per phase, not one per kernel.
 - Per-layer hooks attach only to leaf modules and only when running in the `deep` profile.
-- Best-effort try/except + queues with maxsize ([flush_layer_forward_time_buffers](traceml/src/traceml/utils/hooks/layer_forward_time_hooks.py) silently drops if queue is full) so backpressure can never block training.
+- Best-effort try/except + queues with maxsize ([flush_layer_forward_time_buffers](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_time_hooks.py) silently drops if queue is full) so backpressure can never block training.
 - **Aggregator runs out-of-process** (separate Python interpreter, TCP-connected) — zero impact on training process's GIL or memory.
 - Renders to Rich (terminal) or NiceGUI (web dashboard) in real time, refreshing once per second by default (`TRACEML_INTERVAL=1.0`).
 
@@ -3207,11 +3207,11 @@ If you've narrowed a bug to "Linear layer N is slow" and want to know *which ker
 
 *Where TraceML wins.*
 
-**1. Continuous-during-run with bounded overhead.** `torch.profiler` is designed for short windows. TraceML records O(1) events per phase regardless of model depth. The CUDA event pool ([cuda_event_pool.py](traceml/src/traceml/utils/cuda_event_pool.py), pre-allocated 2000 events) means even per-layer instrumentation amortizes to acquire/release on a deque. Leave on for an 8-hour training run.
+**1. Continuous-during-run with bounded overhead.** `torch.profiler` is designed for short windows. TraceML records O(1) events per phase regardless of model depth. The CUDA event pool ([cuda_event_pool.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/cuda_event_pool.py), pre-allocated 2000 events) means even per-layer instrumentation amortizes to acquire/release on a deque. Leave on for an 8-hour training run.
 
 **2. Live, glanceable signal.** `torch.profiler` produces an artifact you analyze later. TraceML shows a Rich table that updates every second: step time mean/p95/p99, per-rank GPU utilization, dataloader vs forward vs backward vs optimizer breakdown. For "my training is slower than yesterday," that loop is seconds vs minutes.
 
-**3. Zero-code framework integration.** `traceml run train.py` works without touching `train.py`. The CLI sets env vars, the executor uses `runpy.run_path` ([executor.py](traceml/src/traceml/runtime/executor.py)), patches install themselves. `torch.profiler` requires you to add `with profile(...)` to your code. For HF Trainer / Lightning users, TraceML provides drop-in callbacks ([traceml/src/traceml/integrations/](traceml/src/traceml/integrations/)).
+**3. Zero-code framework integration.** `traceml run train.py` works without touching `train.py`. The CLI sets env vars, the executor uses `runpy.run_path` ([executor.py](https://github.com/Pendu/traceml/blob/main/src/traceml/runtime/executor.py)), patches install themselves. `torch.profiler` requires you to add `with profile(...)` to your code. For HF Trainer / Lightning users, TraceML provides drop-in callbacks ([traceml/src/traceml/integrations/](https://github.com/Pendu/traceml/blob/main/src/traceml/integrations/)).
 
 **4. Per-rank, multi-process aggregation.** In DDP, each rank runs its own TraceML in-process agent, all shipping over TCP to a single aggregator that interleaves them in one display. `torch.profiler` produces one trace file per rank to manually combine; doesn't show "rank 3 is the straggler" live.
 
@@ -3245,7 +3245,7 @@ Standard "live monitor + on-demand deep tool" split.
 *The actual `torch.cuda.*` call sites* (from `grep` over the source):
 
 **Event timing — foundation of GPU duration measurement.**
-- `torch.cuda.Event(enable_timing=True)` — [cuda_event_pool.py](traceml/src/traceml/utils/cuda_event_pool.py). Allocates a CUDA event capable of timing.
+- `torch.cuda.Event(enable_timing=True)` — [cuda_event_pool.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/cuda_event_pool.py). Allocates a CUDA event capable of timing.
 - `event.record()` — implicitly recorded on the current stream by `timed_region` and the layer hooks.
 - `event.query()` — non-blocking check whether all preceding stream work has completed. Returns bool. **Critical for "no synchronization" promise** — TraceML never blocks the host waiting on the GPU.
 - `event.elapsed_time(other_event)` — milliseconds between two events on the same stream.
@@ -3275,13 +3275,13 @@ That's the entire `torch.cuda.*` dependency surface. ~12 functions, all in the p
 - `memory_allocated`, `memory_reserved`, `max_*`, `reset_peak_memory_stats` — caching allocator APIs, stable since ~PyTorch 1.4. Meaning shifted slightly when expandable-segments allocator landed (PyTorch 2.1's `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`), but API contract unchanged.
 
 **Medium-stability concerns.**
-- The **per-thread default stream** semantics ([Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) affect *what stream `event.record()` uses by default*. TraceML doesn't use `set_stream` explicitly, so it inherits whatever stream the user's code is running on — correct for measuring user work.
+- The **per-thread default stream** semantics ([Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread)) affect *what stream `event.record()` uses by default*. TraceML doesn't use `set_stream` explicitly, so it inherits whatever stream the user's code is running on — correct for measuring user work.
 
 **Low-stability concerns (the real coupling risk).** These are *not* `torch.cuda.*` but they're what CLAUDE.md's "PyTorch coupling" constraint warns about:
 
-- **`nn.Module.__call__` slot replacement** ([forward_auto_timer_patch.py](traceml/src/traceml/utils/patches/forward_auto_timer_patch.py)). PyTorch reserves the right to make `_call_impl` a C++ method or move dispatch into TorchScript. The day they do, `nn.Module.__call__ = my_func` either fails silently or breaks. **Highest-risk patch in the codebase.**
-- **`torch.Tensor.backward` / `torch.autograd.backward` replacement** ([backward_auto_timer_patch.py](traceml/src/traceml/utils/patches/backward_auto_timer_patch.py)). Same risk class.
-- **`register_full_backward_hook`** ([layer_backward_memory_hook.py](traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py)). Public API, but the contract for `grad_input` / `grad_output` shapes when the module's forward returns non-Tensor outputs has been quietly tightened across versions.
+- **`nn.Module.__call__` slot replacement** ([forward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/forward_auto_timer_patch.py)). PyTorch reserves the right to make `_call_impl` a C++ method or move dispatch into TorchScript. The day they do, `nn.Module.__call__ = my_func` either fails silently or breaks. **Highest-risk patch in the codebase.**
+- **`torch.Tensor.backward` / `torch.autograd.backward` replacement** ([backward_auto_timer_patch.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/patches/backward_auto_timer_patch.py)). Same risk class.
+- **`register_full_backward_hook`** ([layer_backward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py)). Public API, but the contract for `grad_input` / `grad_output` shapes when the module's forward returns non-Tensor outputs has been quietly tightened across versions.
 - **`module._traceml_*` attribute attachment** on user models. Nothing in PyTorch promises `nn.Module` will tolerate arbitrary attributes; if PyTorch ever uses `__slots__` on Module (unlikely but possible), this breaks.
 
 *Why CLAUDE.md emphasizes test coverage.* "All auto-instrumentation depends on PyTorch internals that can change every release. Test coverage is critical." TraceML's CI should pin and test against multiple PyTorch versions (2.5, 2.6, latest nightly). Specifically, the smoke tests should verify:
@@ -3315,7 +3315,7 @@ If any of those fail on a new PyTorch version, the patches need updating *before
 
 The delta approach gives noise dominated by allocator caching policy, not by your model's structure.
 
-*What TraceML actually does.* The forward memory hook in [layer_forward_memory_hook.py](traceml/src/traceml/utils/hooks/layer_forward_memory_hook.py):
+*What TraceML actually does.* The forward memory hook in [layer_forward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_forward_memory_hook.py):
 
 ```python
 def __call__(self, module: nn.Module, inputs: Any, output: Any):
@@ -3343,9 +3343,9 @@ def __call__(self, module: nn.Module, inputs: Any, output: Any):
 
 `numel * element_size` over output tensors — the **logical activation size**. For `Linear(1024, 4096)` on batch 32 fp32: `output.shape = (32, 4096)`, `output.numel() = 131072`, `element_size() = 4`, so 524 KB. That's the actual size of the activation tensor regardless of what the allocator did.
 
-Backward gradient memory ([layer_backward_memory_hook.py](traceml/src/traceml/utils/hooks/layer_backward_memory_hook.py)) uses the same approach on `grad_output`.
+Backward gradient memory ([layer_backward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/layer_backward_memory_hook.py)) uses the same approach on `grad_output`.
 
-*Aggregation across multiple invocations.* From [layer_memory_common.py](traceml/src/traceml/samplers/layer_memory_common.py):
+*Aggregation across multiple invocations.* From [layer_memory_common.py](https://github.com/Pendu/traceml/blob/main/src/traceml/samplers/layer_memory_common.py):
 
 ```python
 def aggregate_layer_memory_payload_max(layers):
@@ -3363,10 +3363,10 @@ If a shared module is called K times in one forward (tied embeddings), TraceML r
 
 *What `torch.cuda.memory_allocated` IS used for.* At the **whole-step level**:
 
-- [StepMemoryTracker.reset](traceml/src/traceml/utils/step_memory.py) calls `torch.cuda.reset_peak_memory_stats(device)` at step start.
+- [StepMemoryTracker.reset](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/step_memory.py) calls `torch.cuda.reset_peak_memory_stats(device)` at step start.
 - `StepMemoryTracker.record` calls `torch.cuda.max_memory_allocated(device)` and `torch.cuda.max_memory_reserved(device)` at step end.
 
-This gives "peak memory footprint of one whole training step" — right granularity for `memory_allocated`-based measurement, because at step boundaries the allocator state is well-defined. Same pattern one level finer in [model_forward_memory_hook.py](traceml/src/traceml/utils/hooks/model_forward_memory_hook.py): pre-hook resets peak stats, post-hook reads max_allocated. "Peak memory during the model's forward."
+This gives "peak memory footprint of one whole training step" — right granularity for `memory_allocated`-based measurement, because at step boundaries the allocator state is well-defined. Same pattern one level finer in [model_forward_memory_hook.py](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/hooks/model_forward_memory_hook.py): pre-hook resets peak stats, post-hook reads max_allocated. "Peak memory during the model's forward."
 
 *The three layers of memory observation.*
 
@@ -3397,8 +3397,8 @@ For "where is my activation memory going?", TraceML's number is correct. For "wh
 
 *Cross-references.*
 
-- [Q9](traceml_learning_qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) — why hooks are the right vehicle for in-process per-layer attribution.
-- [Q15](traceml_learning_qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) — GPU memory state separate from anything host can directly observe.
+- [Q9](learning-qa.md#q9-what-are-hooks-and-what-does-injecting-hooks-in-process-mean) — why hooks are the right vehicle for in-process per-layer attribution.
+- [Q15](learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread) — GPU memory state separate from anything host can directly observe.
 - [P33](#p33-how-does-pytorch-report-gpu-memory-memory_allocated-max_memory_allocated-the-caching-allocator) / [P34](#p34-why-is-reported-memory-sometimes-lower-than-nvidia-smi-shows-caching-allocator-fragmentation) — caching allocator foundation.
 - [P49](#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook) — why post-hook is the right place to read output sizes.
 

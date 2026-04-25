@@ -61,10 +61,10 @@ If a file in the diff doesn't fit the table, that's a flag — the PR is doing s
 
 The point: **after anchoring, you should have one or two substantive files to read deeply (the consumer + maybe a new driver) and 4–5 mechanical files to skim.**
 
-[W1]: ../deep_dive/code-walkthroughs.md#w1-clipy--top-level-launcher-and-process-orchestrator
-[W2]: ../deep_dive/code-walkthroughs.md#w2-per-rank-runtime--executor-runtime-loop-launch-context-session
-[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core--tcp-receive-frame-dispatch-sqlite-writes
-[W10]: ../deep_dive/code-walkthroughs.md#w10-display-drivers--renderers--terminal-and-web-ui-from-sql
+[W1]: ../deep_dive/code-walkthroughs.md#w1-clipy-top-level-launcher-and-process-orchestrator
+[W2]: ../deep_dive/code-walkthroughs.md#w2-per-rank-runtime-executor-runtime-loop-launch-context-session
+[W9]: ../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes
+[W10]: ../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql
 
 ---
 

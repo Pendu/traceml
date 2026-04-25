@@ -61,7 +61,7 @@ argparse declaration   →  validation        →  env-var assembly      →  co
 
 Skip any layer and the flag is dead code in that layer's process.
 
-For a refresher on why fork+exec means children can't read the parent's in-memory state, see [Q7](../deep_dive/learning-qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods) and [W1](../deep_dive/code-walkthroughs.md#w1-clipy--top-level-launcher-and-process-orchestrator).
+For a refresher on why fork+exec means children can't read the parent's in-memory state, see [Q7](../deep_dive/learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods) and [W1](../deep_dive/code-walkthroughs.md#w1-clipy-top-level-launcher-and-process-orchestrator).
 
 ### What the CLI process owns
 
@@ -926,7 +926,7 @@ Numbered, with symptom and fix.
 
 `subprocess.Popen(..., env=env)` passes the parent's `env` dict as the new process's initial environment. The child reads via `os.environ.get(...)`. There is **no shared memory**; the child's `os.environ` is a copy made at exec time. Subsequent changes in the parent are invisible to the child, and vice versa.
 
-For the OS-level mechanics see [Q5 (OS fundamentals)](../deep_dive/learning-qa.md#q5-os-fundamentals--kernel-process-internals-pipes-sockets) and [Q7 (fork/exec)](../deep_dive/learning-qa.md#q7-spawning--fork-exec-and-multiprocessing-start-methods).
+For the OS-level mechanics see [Q5 (OS fundamentals)](../deep_dive/learning-qa.md#q5-os-fundamentals-kernel-process-internals-pipes-sockets) and [Q7 (fork/exec)](../deep_dive/learning-qa.md#q7-spawning-fork-exec-and-multiprocessing-start-methods).
 
 In TraceML, this means: **changes to `TRACEML_*` env vars after `launch_process` has spawned children have no effect**. If you need to change a value mid-run, you need a new IPC channel — and TraceML doesn't have one.
 
