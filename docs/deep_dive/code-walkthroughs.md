@@ -8,14 +8,36 @@ Walkthroughs assume the vocabulary from those Q&As — when a walkthrough cross-
 
 ## Physical view — visual map
 
-The diagram below maps every walkthrough below onto the three-process runtime
-(CLI launcher / training rank / aggregator). Each box is annotated with the
-walkthrough number (`[W1]` … `[W12]`) it belongs to — use it as a legend while
-reading the page.
+The diagram below maps every file and subsystem in TraceML onto the three-process runtime that gets spawned by `traceml watch|run|deep`. Each box is annotated with the walkthrough number (`[W1]` … `[W12]`) it belongs to — use it as a legend while reading the page.
 
 ![TraceML physical view](../assets/architecture_physical_view.png)
 
-> Editable source: [`architecture_physical_view.excalidraw`](../assets/architecture_physical_view.excalidraw) — open in [excalidraw.com](https://excalidraw.com) to update.
+> Editable source: [`architecture_physical_view.excalidraw`](../assets/architecture_physical_view.excalidraw) — open in [excalidraw.com](https://excalidraw.com) to edit.
+
+**How to read it.** Three columns mirror the three real processes:
+
+- **TraceOpt CLI process (top, amber)** — `cli.py` only. Pure orchestration: argparse, run manifest, TCP readiness probe, signal handlers, `fork+exec` of the aggregator and training processes. Zero instrumentation. ~101 lines. Maps to **[W1]**.
+- **Training process (left, blue zone — `xN` per GPU rank, spawned via `fork+exec` from the CLI)** — where every per-rank file lives. Top-to-bottom mirrors the order of the walkthroughs:
+  - *USER CODE — instrumentation surface* (light green) — the public API the user actually touches: `decorators.py` (`trace_step`, `trace_model_instance`, `trace_time`), `api.py`, the `wrappers.py` proxies, plus the framework adapters (`integrations/huggingface.py`, `integrations/lightning.py`). Maps to **[W3, W12]**.
+  - *PATCHES + HOOKS* (purple) — the monkey-patching layer. Auto-timer patches in `utils/patches/` (`forward_*`, `backward_*`, `dataloader_*`, `h2d_*`) and per-layer memory hooks in `utils/hooks/`. This is how zero-code instrumentation actually works. Maps to **[W4, W5]**.
+  - *SAMPLERS* (orange) — read-only views over hook events that emit structured rows: `step_time_sampler`, `step_memory_sampler`, `layer_forward_*`, `layer_backward_*`, `system_sampler`, `process_sampler`. Schemas live in `samplers/schemas/`. Maps to **[W6]**.
+  - *DATABASE / QUEUE* (teal) — in-process bounded store. One append-only `deque` table per sampler, fixed `maxlen` for O(1) eviction. `database/database.py`, `database/database_writer.py`. Maps to **[W7]**.
+  - *RUNTIME* (yellow) — background thread + lifecycle. `runtime/executor.py` runs the user script via `runpy`; `runtime/runtime_loop.py` drives periodic sampler ticks; `launch_context` and `session/settings` hold per-run state. Maps to **[W2]**.
+  - *SENDER* (pink) — incremental TCP shipping. `database/database_sender.py` reads only the new rows since the last append counter; `transport/tcp_transport.py` (client side) handles length-prefixed msgpack frames; `transport/distributed.py` does DDP rank detection from `RANK` / `LOCAL_RANK` / `WORLD_SIZE`. Maps to **[W7, W8]**.
+- **Aggregator process (right, green zone — also spawned via `fork+exec` from the CLI)** — server-side, long-running, reads + renders. Never blocks training:
+  - *ENTRY / RECEIVE* (blue) — `aggregator/aggregator_main.py` is the entry point; `transport/tcp_transport.py` (server side) accepts ranks. Maps to **[W6, W9]**.
+  - *STORE — rank-aware unified state* (teal) — `database/remote_database_store.py` keeps each rank's tables separate (`_dbs[rank][sampler_name]`); reuses the same bounded `Database` class the rank side uses. Single-writer thread, `WAL` mode for the SQLite write-out. Maps to **[W9]**.
+  - *LIVE UI* (purple) — display drivers (`aggregator/display_drivers/cli.py`, `nicegui.py`) own the layout and orchestrate the renderers (`renderers/step_time.py`, `step_memory.py`, `layer_*`, `system.py`, `process.py`, `stdout.py`, `stderr.py`), which read from the unified store. Maps to **[W10]**.
+  - *END-OF-RUN — summary + diagnostics* (orange) — `aggregator/summaries/*` and `aggregator/diagnostics/*` produce the verdict block on shutdown. Input-bound / memory-creep / idle-GPU heuristics. Reads persisted SQLite at end of run. Maps to **[W11]**.
+
+**Edges (the arrows between boxes):**
+
+- **Gray-green** = in-process data flow inside a single rank (sampler → database → sender).
+- **Amber** = process spawn via `fork+exec` from the CLI (CLI → aggregator, CLI → each training rank).
+- **Orange dashed** = TCP loopback, cross-process. The only network edge in the system; carries length-prefixed msgpack frames from each rank's sender to the aggregator's receive loop. Loopback because aggregator and training run on the same machine.
+- **Dashed** = end-of-run path (SQLite writer → diagnostics on shutdown). Not on the steady-state hot path.
+
+**How to use this diagram while reading the walkthroughs:** find the file you're about to read in the diagram, note which column and which `[W#]` cluster it sits in, then jump to that walkthrough below. The columns answer "*which process does this run in?*"; the colors answer "*which architectural role does this play?*"; the `[W#]` tags answer "*where in this page is it explained in detail?*"
 
 ---
 
