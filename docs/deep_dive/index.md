@@ -16,6 +16,10 @@ the architecture.
   specific subsystems, tracing the actual call paths.
 - **[PyTorch Q&A](pytorch-qa.md)** — PyTorch internals relevant to TraceML's
   instrumentation strategy (hooks, autograd, CUDA timing, DDP).
+- **PR reviews** — pull requests re-read through the walkthroughs above:
+    - **[PR #87 — H2D timing](pr_reviews/pr-87-h2d-timing.md)** — synthesis
+      review of the host-to-device auto-timer patch, with a contribution map
+      onto the same physical view.
 
 ## Physical view
 
