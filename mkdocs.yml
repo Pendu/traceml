@@ -99,6 +99,7 @@ nav:
       - Contributing: developer_guide/contributing.md
   - Deep Dive:
       - Overview: deep_dive/index.md
+      - Why TraceML: deep_dive/why.md
       - Learning Q&A: deep_dive/learning-qa.md
       - Code walkthroughs: deep_dive/code-walkthroughs.md
       - PyTorch Q&A: deep_dive/pytorch-qa.md

@@ -8,6 +8,8 @@ the architecture.
 
 ## What's here
 
+- **[Why TraceML](why.md)** — the value thesis: what problem TraceML solves,
+  who it's for, and how it differs from existing profilers.
 - **[Learning Q&A](learning-qa.md)** — questions that came up while reading the
   code, with answers grounded in the current source.
 - **[Code walkthroughs](code-walkthroughs.md)** — long-form tours through
