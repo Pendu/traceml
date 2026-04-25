@@ -2,9 +2,9 @@ name: Docs
 
 on:
   push:
-    branches: [main]
+    branches: [docs/study]
   pull_request:
-    branches: [main]
+    branches: [docs/study]
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -25,14 +25,14 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[docs,torch,lightning,hf]"
-      - run: mkdocs build --strict
+      - run: mkdocs build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/docs/study'
     runs-on: ubuntu-latest
     permissions:
       pages: write

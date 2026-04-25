@@ -1,9 +1,9 @@
 site_name: TraceML
 site_description: Real-time bottleneck finder for PyTorch training runs
-site_url: https://traceopt-ai.github.io/traceml/
-repo_url: https://github.com/traceopt-ai/traceml
-repo_name: traceopt-ai/traceml
-edit_uri: edit/main/docs/
+site_url: https://pendu.github.io/traceml/
+repo_url: https://github.com/Pendu/traceml
+repo_name: Pendu/traceml
+edit_uri: edit/docs/study/docs/
 
 theme:
   name: material
@@ -97,3 +97,8 @@ nav:
           - Integrations: developer_guide/subsystems/integrations.md
           - Utils: developer_guide/subsystems/utils.md
       - Contributing: developer_guide/contributing.md
+  - Deep Dive:
+      - Overview: deep_dive/index.md
+      - Learning Q&A: deep_dive/learning-qa.md
+      - Code walkthroughs: deep_dive/code-walkthroughs.md
+      - PyTorch Q&A: deep_dive/pytorch-qa.md
