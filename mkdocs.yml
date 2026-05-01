@@ -97,6 +97,7 @@ nav:
           - Integrations: developer_guide/subsystems/integrations.md
           - Utils: developer_guide/subsystems/utils.md
       - Contributing: developer_guide/contributing.md
+  - Architecture diagrams: architecture_diagrams/index.md
   - Contributor Guide:
       - Overview: contributor_guide/index.md
       - Foundations:
