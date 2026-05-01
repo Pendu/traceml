@@ -25,7 +25,7 @@ Sub-topics (more questions can be added to any of them):
 8. Distributed (DDP / FSDP) (P38–P42)
 9. Eager vs graph mode (P43–P45)
 10. Checkpointing & state (P46–P47)
-11. PyTorch internals relevant to TraceML (P48–P52)
+11. PyTorch internals relevant to TraceML (P48–P53)
 
 ---
 
@@ -104,6 +104,7 @@ Sub-topics (more questions can be added to any of them):
 - [P50: How does PyTorch's built-in profiler differ from TraceML's approach?](#p50-how-does-pytorchs-built-in-profiler-torchprofiler-differ-from-tracemls-approach-where-does-traceml-do-better-and-where-does-the-profiler-do-better)
 - [P51: Which torch.cuda.* APIs does TraceML rely on, and how stable are they across PyTorch versions?](#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions)
 - [P52: How does TraceML measure per-layer memory, and what's the relationship to torch.cuda.memory_allocated?](#p52-how-does-traceml-measure-per-layer-memory-and-whats-the-relationship-to-torchcudamemory_allocated)
+- [P53: What is @dataclass, and what design choices does it freeze for you (vs plain class, NamedTuple, TypedDict, Pydantic)?](#p53-what-is-dataclass-and-what-design-choices-does-it-freeze-for-you-vs-plain-class-namedtuple-typeddict-pydantic)
 
 ---
 
@@ -3404,6 +3405,160 @@ For "where is my activation memory going?", TraceML's number is correct. For "wh
 *Mental model.* Per-layer memory is **a structural property of the network** (how many activation bytes does layer N's output occupy). Step-level memory is **a property of the allocator's behavior under your workload** (what watermark did your allocator hit). Mixing the two leads to "but the deltas don't add up!" confusion — they're answering different questions, which is why TraceML maintains both granularities side by side.
 
 **Concepts introduced:** structural vs delta-based memory measurement, why caching-allocator deltas mislead per-layer attribution, `numel × element_size` as logical tensor footprint, max-aggregation rationale for repeated-call modules (capacity not throughput), the three granularities (per-layer / whole-forward / whole-step), allocated vs reserved distinction, in-place op handling under structural measurement, when to fall back to `torch.profiler` `profile_memory=True` for true allocation timeline.
+
+---
+
+### P53: What is `@dataclass`, and what design choices does it freeze for you (vs plain class, NamedTuple, TypedDict, Pydantic)?
+
+**Date:** 2026-05-01
+
+**Short answer:** `@dataclass` is a class decorator that auto-generates `__init__`, `__repr__`, and `__eq__` from the type-annotated fields you declare. It's the right choice when you want a **named record with a few methods, minimal boilerplate, and runtime-mutable fields** — exactly the shape of TraceML's `TimeEvent`, `StepTimeBatch`, and `BaseTraceEvent`. Wrong when you need immutability + structural typing (`NamedTuple`), runtime validation (`pydantic.BaseModel`), or a static-only schema (`TypedDict`). The three gotchas to remember are (1) mutable defaults need `field(default_factory=...)`, (2) `Optional[X]` is *not* a default of `None`, and (3) inheritance with default-bearing parent fields constrains how subclasses can declare their own.
+
+**Long answer:**
+
+*What the decorator generates.* Given:
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class BaseTraceEvent:
+    name: str
+    step_: Optional[int]
+    timestamp: Optional[int]
+```
+
+`@dataclass` synthesizes:
+
+- `__init__(self, name, step_, timestamp)` — positional-or-keyword, **no defaults** (because none were declared).
+- `__repr__(self)` — `BaseTraceEvent(name='forward', step_=42, timestamp=1234)`.
+- `__eq__(self, other)` — field-by-field equality.
+
+It does NOT generate: `__hash__` (unless `frozen=True`), `__slots__` (unless explicitly opted in), `__lt__/__le__/__gt__/__ge__` (unless `order=True`).
+
+The bytes-on-disk equivalent without `@dataclass` is ~20 lines of repetitive `__init__` + `__repr__` + `__eq__` boilerplate per class. `@dataclass` collapses that to four lines. The cost is a layer of class-decoration machinery that runs once at class-definition time; for record types like TraceML's events it's in the noise.
+
+*Gotcha 1 — mutable defaults are a trap.* This raises `ValueError`:
+
+```python
+@dataclass
+class StepTimeBatch:
+    step: int
+    events: List[TimeEvent] = []   # ❌ mutable default → all instances share one list
+```
+
+The decorator catches it because shared-mutable-state across instances is almost always a bug. The fix uses `field(default_factory=...)`:
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class StepTimeBatch:
+    step: int
+    events: List[TimeEvent] = field(default_factory=list)   # ✅ per-instance fresh list
+```
+
+[`StepTimeBatch` in `timing.py`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) does exactly this. Same rule for `dict`, `set`, any custom class — anything mutable.
+
+*Gotcha 2 — `Optional[X]` is not a default of `None`.* This is the most common confusion in the wild:
+
+```python
+@dataclass
+class BaseTraceEvent:
+    step_: Optional[int]   # still REQUIRED at construction
+```
+
+`Optional[int]` is `Union[int, None]` — a *type* annotation. It does not set a default. To get "defaults to None and can be omitted at construction," write:
+
+```python
+@dataclass
+class BaseTraceEvent:
+    step_: Optional[int] = None   # ✅ defaults to None
+```
+
+This matters for `BaseTraceEvent` because the comment "attached at flush" suggests the intent is to construct with `step_` unset and assign later. As written, the caller has to pass `step_=None` explicitly every time. If the lifecycle is "leave unset, fill in at flush," add `= None`.
+
+*Gotcha 3 — inheritance ordering.* When a parent declares a field with a default, every subclass field must also have a default (or use `kw_only=True`):
+
+```python
+@dataclass
+class BaseTraceEvent:
+    name: str = "unknown"   # default
+
+@dataclass
+class TimingTraceEvent(BaseTraceEvent):
+    cpu_start: float        # ❌ TypeError: non-default argument follows default
+```
+
+Two fixes:
+
+```python
+# (a) give the subclass field a default
+@dataclass
+class TimingTraceEvent(BaseTraceEvent):
+    cpu_start: float = 0.0
+
+# (b) Python 3.10+: switch to keyword-only
+@dataclass(kw_only=True)
+class TimingTraceEvent(BaseTraceEvent):
+    cpu_start: float
+```
+
+`kw_only=True` is the cleaner answer once the hierarchy grows beyond two levels.
+
+*The decorator's modifiers.*
+
+| Modifier | Effect | TraceML usage |
+|---|---|---|
+| `frozen=True` | Field assignment after `__init__` raises `FrozenInstanceError`; auto `__hash__` | `TraceMLInitConfig` — process-wide invariant |
+| `slots=True` (3.10+) | Adds `__slots__`, reduces per-instance memory; forbids new attrs | Not used today; could shave bytes off `TimeEvent` if event volume becomes a concern |
+| `eq=True` (default) | Auto `__eq__` | Default everywhere |
+| `order=True` | Auto `__lt__/__le__/__gt__/__ge__` | Not used; events aren't ordered by all fields |
+| `kw_only=True` (3.10+) | All fields become keyword-only | Useful for inheritance |
+| `init=True` (default) | Auto `__init__` | Default |
+| `repr=True` (default) | Auto `__repr__` | Default |
+
+*`__post_init__` for validation and derivation.* If you need work after the auto-generated `__init__`:
+
+```python
+@dataclass
+class TimeEvent:
+    name: str
+    cpu_start: float
+    cpu_end: float
+    duration_ms: float = 0.0   # derived
+
+    def __post_init__(self):
+        if self.cpu_end < self.cpu_start:
+            raise ValueError("cpu_end before cpu_start")
+        self.duration_ms = (self.cpu_end - self.cpu_start) * 1000.0
+```
+
+`__post_init__` runs after the auto `__init__` finishes setting fields. It's the right hook for cross-field validation, derived attributes, or wiring up state that depends on multiple fields. The actual `TimeEvent` in `timing.py` doesn't use `__post_init__` because GPU timing is async and `try_resolve` does the lazy fill instead — but if a future event type needs upfront validation, this is the place.
+
+*When `@dataclass` is the wrong choice.*
+
+| Need | Use instead | Reason |
+|---|---|---|
+| Immutable + structural typing (passes where `Tuple[int, str]` is expected) | `typing.NamedTuple` | NamedTuples *are* tuples; dataclasses aren't |
+| Runtime validation, JSON parsing, schema generation | `pydantic.BaseModel` | Heavier dependency; validation built-in |
+| Compile-time-only schema (dict in / dict out, no class instance) | `typing.TypedDict` | Zero runtime cost; mypy enforces shape |
+| Pre-3.7 codebase | `attrs` | Predates dataclasses; richer feature set |
+| Class is *primarily* methods, not data | Plain class | No reason to add the decorator's machinery |
+
+For TraceML's case (in-process telemetry records, mutable lifecycle, occasionally a method or two), `@dataclass` is the right fit.
+
+*TraceML's dataclass usage map.*
+
+- [`TimeEvent`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) — mutable; has `try_resolve` method that lazily fills `gpu_time_ms`.
+- [`StepTimeBatch`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/timing.py) — mutable; uses `field(default_factory=list)` for `events`.
+- [`TraceMLInitConfig`](https://github.com/Pendu/traceml/blob/main/src/traceml/initialization.py) — `frozen=True`, process-wide invariant.
+- [`BaseTraceEvent`](https://github.com/Pendu/traceml/blob/main/src/traceml/utils/base_trace_event.py) — new shared base; mutable; `Optional` fields are *required at construction* per gotcha 2 (consider adding `= None` if "fill at flush" is the intent).
+
+*RL analogy.* `@dataclass` is to plain class what `gym.spaces.Box(...)` is to writing your own observation-space class — a structured shorthand for a common pattern. Reach for the long-hand only when the abstraction's defaults don't fit. For telemetry records, they always fit.
+
+**Concepts introduced:** `@dataclass` decorator and what it generates (`__init__`, `__repr__`, `__eq__`), `field(default_factory=...)` for mutable defaults, the `Optional[X]` ≠ default-`None` pitfall, inheritance + default-ordering rule, `kw_only=True` as the inheritance escape hatch, `frozen=True` for immutable invariants, `slots=True` for memory savings, `__post_init__` for validation/derivation, comparison axis vs `NamedTuple` / `TypedDict` / `pydantic.BaseModel` / `attrs`, TraceML's specific dataclass usage patterns.
 
 ---
 
