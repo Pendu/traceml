@@ -62,6 +62,13 @@ def run_one(
         return {"session": session, "rc": 0, "skipped": True}
 
     env = {**os.environ, **{k: str(v) for k, v in extra_env.items()}}
+    if mode == "baseline":
+        # Disable all traceml.* calls so fixtures that call
+        # traceml.final_summary() (e.g. pytorch_minimal.py,
+        # manual_custom_minimal.py) or use TraceMLTrainer integration
+        # don't crash for lack of a session context. Documented in
+        # CLAUDE.md as the canonical "no TraceML observing" toggle.
+        env["TRACEML_DISABLED"] = "1"
 
     if mode == "baseline":
         cmd = [

@@ -1,0 +1,16 @@
+workload,mode,n_trials,wall_s_mean,wall_s_std,step_avg_ms_mean,step_avg_ms_std,peak_gpu_mem_gb_mean,peak_gpu_mem_gb_std,peak_rss_gb_mean,peak_rss_gb_std
+bert_agnews,baseline,5,318.64,1.0526,,,8.7167,0.0,2.0558,0.0056
+bert_agnews,traceml_run,5,327.62,0.9338,387.5059,0.2721,8.7167,0.0,11.0809,0.4367
+bert_fsdp_agnews,baseline,5,61.38,0.1924,,,3.6479,0.0,3.3211,0.0006
+bert_fsdp_agnews,traceml_run,5,67.34,0.9397,200.4708,0.6257,3.6479,0.0,11.6239,0.1741
+gpt2_wikitext,baseline,5,31.8,0.1581,,,6.3867,0.0,1.3466,0.0021
+gpt2_wikitext,traceml_run,5,40.62,0.9834,158.8878,0.1124,6.3867,0.0,10.3592,0.1602
+hf_trainer,baseline,5,11.0,0.1414,,,0.8628,0.0,1.5898,0.0003
+hf_trainer,traceml_run,5,19.28,0.0837,2.794,0.0983,1.2487,0.0,10.0535,0.102
+resnet50_cifar100,baseline,5,15.7,0.1581,,,4.3567,0.0,1.8201,0.0086
+resnet50_cifar100,traceml_run,5,23.04,1.0968,278.8192,3.6418,4.3567,0.0,10.9357,0.0913
+tiny_mlp,traceml_run,5,34.7,0.0707,55.7523,0.0776,0.9195,0.0,9.9823,0.0341
+tiny_mlp_ddp,baseline,5,8.28,0.1095,,,0.8817,0.0,2.7705,0.0018
+tiny_mlp_ddp,traceml_run,5,14.14,1.0597,3.8082,0.2598,0.8817,0.0,11.1674,0.0819
+vit_cifar10,baseline,5,17.24,0.2881,,,4.1155,0.0,1.945,0.0079
+vit_cifar10,traceml_run,5,28.62,0.0447,258.0773,1.5652,4.5098,0.0,10.5962,0.0996

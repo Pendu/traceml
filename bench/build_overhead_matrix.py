@@ -27,13 +27,34 @@ sys.path.insert(0, str(REPO / "bench"))
 from workloads import WORKLOADS  # noqa: E402
 
 
+def _external_wall(trial_dir: Path) -> float | None:
+    """Read external subprocess wall from sidecar if present.
+
+    Both modes are compared on subprocess-launch-to-exit wall (written
+    by inject_external_walls.py from the matrix runner's log). This
+    guarantees apples-to-apples: TraceML's `duration_s` is its internal
+    timer (starts after `traceml.init()`), so falling back to it would
+    under-count traceml_run's wall and produce spurious negative
+    overhead %.
+    """
+    p = trial_dir / "external_wall.json"
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text())["external_wall_s"]
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
 def load_traceml_metrics(p: Path) -> dict:
     with open(p) as f:
         d = json.load(f)
     st = d.get("step_time", {})
     sysd = d.get("system", {})
+    ext_wall = _external_wall(p.parent)
     return {
-        "wall_s": d.get("duration_s"),
+        "wall_s": ext_wall if ext_wall is not None else d.get("duration_s"),
+        "wall_source": "external" if ext_wall is not None else "duration_s",
         "step_avg_ms": (
             st.get("global", {}).get("typical", {}).get("step_avg_ms")
             or st.get("timing_primary", {}).get("step_avg_ms")
@@ -49,14 +70,26 @@ def load_traceml_metrics(p: Path) -> dict:
     }
 
 
-def load_baseline_metrics(p: Path) -> dict:
+def load_baseline_metrics(p: Path) -> dict | None:
     with open(p) as f:
         d = json.load(f)
+    # Skip failed trials — their wall is truncated at the crash point
+    # and would skew the average. Caller sees None and excludes the row.
+    if d.get("exit_code", 0) != 0:
+        return None
     peak_gpu_bytes = d.get("peak_gpu_mem_bytes_per_gpu") or []
     peak_gpu_gb = max(peak_gpu_bytes) / 1e9 if peak_gpu_bytes else None
     peak_rss_gb = (d.get("peak_rss_bytes") or 0) / 1e9 or None
+    ext_wall = _external_wall(p.parent)
     return {
-        "wall_s": d.get("wall_s"),
+        # Baseline harness already records subprocess wall, but for
+        # max consistency we prefer the matrix-runner-measured wall
+        # (same source as traceml_run's external wall). Fallback is
+        # baseline_harness's own wall_s — which is also subprocess
+        # wall, just measured one stack frame earlier. Should match
+        # within milliseconds.
+        "wall_s": ext_wall if ext_wall is not None else d.get("wall_s"),
+        "wall_source": "external" if ext_wall is not None else "harness",
         "step_avg_ms": None,
         "training_steps": None,
         "peak_gpu_mem_gb": peak_gpu_gb,
@@ -101,7 +134,9 @@ def discover_rows(bench_root: Path) -> dict:
                 else:
                     p = t_dir / "baseline_metrics.json"
                     if p.exists():
-                        per_trial.append(load_baseline_metrics(p))
+                        m = load_baseline_metrics(p)
+                        if m is not None:
+                            per_trial.append(m)
             if per_trial:
                 rows[(workload, mode)] = {
                     "n_trials": len(per_trial),
