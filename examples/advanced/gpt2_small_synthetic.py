@@ -137,13 +137,11 @@ def main():
 
     for epoch in range(EPOCHS):
         for batch in train_loader:
-            optimizer.zero_grad(set_to_none=True)
-
+            # Canonical trace_step boundary per src/dev/scenarios/bert_ddp.py:
+            # dataloading is OUTSIDE; H2D, zero_grad, fwd, bwd, opt all INSIDE.
             with traceml.trace_step(model):
-                # H2D inside trace_step per v0.2.13 convention
-                # (study/README.md): attributes transfer to the
-                # dataloader phase instead of residual.
                 batch = to_device_dict(batch, device)
+                optimizer.zero_grad(set_to_none=True)
 
                 with torch.amp.autocast(
                     device_type="cuda", enabled=use_amp, dtype=dtype
