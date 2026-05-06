@@ -413,6 +413,33 @@ class TestWrapH2D:
             "the patch already times the underlying .to() call"
         )
 
+    def test_wrap_h2d_forwards_dunders_to_dict_batch(self):
+        """Wrapper forwards __len__/__getitem__/__iter__/__contains__ so
+        users can introspect a dict-like batch (HF BatchEncoding-style)
+        before calling .to()."""
+
+        class _FakeDictBatch:
+            def __init__(self, data):
+                self._data = data
+            def to(self, device):  # noqa: E701
+                return self
+            def __getitem__(self, k):
+                return self._data[k]
+            def __len__(self):
+                return len(self._data)
+            def __iter__(self):
+                return iter(self._data)
+            def __contains__(self, k):
+                return k in self._data
+
+        batch = _FakeDictBatch({"x": torch.ones(4), "y": torch.ones(2)})
+        wrapped = wrap_h2d(batch)
+
+        assert wrapped["x"].shape == (4,)
+        assert "x" in wrapped
+        assert len(wrapped) == 2
+        assert set(wrapped) == {"x", "y"}
+
     def test_wrap_h2d_accepts_custom_batch_object(self):
         """wrap_h2d() works on any object with a .to() method, not only tensors."""
 

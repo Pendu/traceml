@@ -324,6 +324,23 @@ class _WrappedH2D:
     def __getattr__(self, name: str) -> Any:
         return getattr(self._obj, name)
 
+    # Special methods (__len__, __iter__, __getitem__, __contains__) bypass
+    # __getattr__ on the class, so we forward them explicitly.  This lets
+    # users introspect a dict-like batch container (HF BatchEncoding, etc.)
+    # before calling .to(), e.g. ``len(wrap_h2d(batch))``, ``"x" in wrapped``.
+    # Mirrors the precedent in _WrappedDataLoaderFetch.__len__.
+    def __len__(self) -> int:
+        return len(self._obj)
+
+    def __iter__(self) -> Any:
+        return iter(self._obj)
+
+    def __getitem__(self, key: Any) -> Any:
+        return self._obj[key]
+
+    def __contains__(self, item: Any) -> bool:
+        return item in self._obj
+
     def __repr__(self) -> str:
         return f"_WrappedH2D({self._obj!r})"
 
