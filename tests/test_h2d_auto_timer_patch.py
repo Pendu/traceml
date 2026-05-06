@@ -11,6 +11,15 @@ idempotent install it claims to be — install once, then drive behavior via
 the TLS gate. ``timed_region`` is stubbed with ``monkeypatch.setattr`` per the
 ``test_wrap_optimizer_wraps_real_instance_step`` convention in
 ``tests/test_initialization_and_wrappers.py``.
+
+Note on cross-test cleanup: the autouse ``_reset_h2d_state`` fixture installs
+``patch_h2d()`` (idempotent) at the start of every test in this module but
+deliberately does NOT uninstall ``torch.Tensor.to`` afterward. Uninstalling
+would require the same reload that triggers the ``RecursionError`` above.
+This is benign: the patched wrapper fast-paths to ``_ORIG_TENSOR_TO`` whenever
+the TLS gate is False, so other tests' ``.to()`` calls behave identically to
+an unpatched ``torch.Tensor.to``. No other test in the repo asserts
+``torch.Tensor.to is original_method``.
 """
 
 from __future__ import annotations
