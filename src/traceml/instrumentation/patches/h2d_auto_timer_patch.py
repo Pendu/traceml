@@ -19,10 +19,13 @@ patches:
 
 GPU timing
 ----------
-CUDA events are recorded around the ``.to()`` call via ``timed_region``.  For
-blocking transfers (``non_blocking=False``, the default) this accurately
-captures DMA time.  For ``non_blocking=True`` the events bound the time until
-the DMA is queued on the current stream, which is a useful lower bound.
+CUDA events are recorded on the current stream around the ``.to()`` call.
+``start.record()`` enqueues a timestamp marker before the DMA op;
+``end.record()`` enqueues one after.  Once ``end`` fires (resolved later via
+``event.query()`` in the sampler — see ``utils/timing.py::TimeEvent.try_resolve``),
+``start.elapsed_time(end)`` returns the GPU-side wall-clock duration between
+the two markers — including the asynchronous DMA itself.  Accuracy is the
+same for ``non_blocking=True`` and ``non_blocking=False``.
 
 Filtering
 ---------
