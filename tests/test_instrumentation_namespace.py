@@ -10,9 +10,13 @@ def test_canonical_instrumentation_namespace_imports():
     forward_patch = importlib.import_module(
         "traceml.instrumentation.patches.forward_auto_timer_patch"
     )
+    h2d_patch = importlib.import_module(
+        "traceml.instrumentation.patches.h2d_auto_timer_patch"
+    )
 
     assert optimizer_hooks.ensure_optimizer_timing_installed is not None
     assert forward_patch.patch_forward is not None
+    assert h2d_patch.patch_h2d is not None
 
 
 @pytest.mark.parametrize(
