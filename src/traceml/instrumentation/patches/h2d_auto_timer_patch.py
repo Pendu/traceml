@@ -9,6 +9,7 @@ Coverage gap: convenience shortcuts (``.cuda()``, ``.cpu()``, ``.float()``,
 relying on those shortcuts will not see h2d events. Migration guidance:
 prefer ``.to(device, non_blocking=True)``.
 """
+
 from __future__ import annotations
 
 import threading
@@ -26,9 +27,7 @@ def _enabled() -> bool:
     return bool(getattr(_TLS, "_traceml_h2d_enabled", False))
 
 
-def _traceml_tensor_to(
-    self: torch.Tensor, *args: Any, **kwargs: Any
-) -> Any:
+def _traceml_tensor_to(self: torch.Tensor, *args: Any, **kwargs: Any) -> Any:
     if not _enabled():
         return _ORIG_TENSOR_TO(self, *args, **kwargs)
     with timed_region(

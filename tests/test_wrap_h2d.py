@@ -1,4 +1,5 @@
 """Tests for the wrap_h2d manual instrumentation proxy."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

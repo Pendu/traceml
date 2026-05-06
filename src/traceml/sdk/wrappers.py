@@ -342,9 +342,7 @@ def wrap_h2d(tensor: torch.Tensor) -> _WrappedH2DTensor:
     _ensure_h2d_wrapper_allowed()
 
     if not isinstance(tensor, torch.Tensor):
-        raise TypeError(
-            "wrap_h2d() expects a torch.Tensor instance."
-        )
+        raise TypeError("wrap_h2d() expects a torch.Tensor instance.")
 
     return _WrappedH2DTensor(tensor)
 

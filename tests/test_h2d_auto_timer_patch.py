@@ -12,6 +12,7 @@ the TLS gate. ``timed_region`` is stubbed with ``monkeypatch.setattr`` per the
 ``test_wrap_optimizer_wraps_real_instance_step`` convention in
 ``tests/test_initialization_and_wrappers.py``.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager
