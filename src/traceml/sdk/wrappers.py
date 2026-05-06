@@ -94,6 +94,14 @@ def _ensure_optimizer_wrapper_allowed() -> None:
         )
 
 
+def _ensure_h2d_wrapper_allowed() -> None:
+    if getattr(torch.Tensor, "_traceml_h2d_patched", False):
+        _raise_duplicate_instrumentation(
+            "host-to-device transfer",
+            "torch.Tensor.to has already been patched.",
+        )
+
+
 class _WrappedDataLoaderIterator:
     """
     Iterator proxy that times `next(...)` as TraceML dataloader fetch.
@@ -156,6 +164,33 @@ class _WrappedBackwardHandle:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._loss, name)
+
+
+class _WrappedH2DTensor:
+    """
+    Proxy that times ``.to(...)`` on a tensor as a host-to-device event.
+
+    Single-shot: ``.to(...)`` returns the moved tensor *raw* (not re-wrapped).
+    All other attribute accesses delegate to the underlying tensor via
+    ``__getattr__``.
+
+    This emits the same event name used by the automatic h2d patch path:
+    ``_traceml_internal:h2d_time``.
+    """
+
+    def __init__(self, tensor: torch.Tensor) -> None:
+        self._tensor = tensor
+
+    def to(self, *args: Any, **kwargs: Any) -> torch.Tensor:
+        with timed_region(
+            name="_traceml_internal:h2d_time",
+            scope=TimeScope.STEP,
+            use_gpu=True,
+        ):
+            return self._tensor.to(*args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._tensor, name)
 
 
 def wrap_dataloader_fetch(obj: Any) -> Any:
@@ -286,9 +321,38 @@ def wrap_optimizer(optimizer: Any) -> Any:
     return optimizer
 
 
+def wrap_h2d(tensor: torch.Tensor) -> _WrappedH2DTensor:
+    """
+    Wrap a tensor so its ``.to(...)`` call is timed as an h2d event.
+
+    Use this in manual or selective mode (when the global h2d patch is not
+    installed). Raises ``RuntimeError`` if the global auto patch is already
+    active for h2d, to prevent duplicate event emission.
+
+    Notes
+    -----
+    - This is a single-shot wrapper. ``.to(...)`` returns the moved tensor
+      raw, not re-wrapped. Subsequent operations on the returned tensor are
+      not timed.
+    - Convenience shortcuts on the underlying tensor (``.cuda()``, ``.cpu()``,
+      ``.float()``, ``.half()``, etc.) bypass ``Tensor.to`` at the C++ level
+      and therefore are not timed by this proxy. Prefer
+      ``.to(device, non_blocking=True)``.
+    """
+    _ensure_h2d_wrapper_allowed()
+
+    if not isinstance(tensor, torch.Tensor):
+        raise TypeError(
+            "wrap_h2d() expects a torch.Tensor instance."
+        )
+
+    return _WrappedH2DTensor(tensor)
+
+
 __all__ = [
     "wrap_dataloader_fetch",
     "wrap_forward",
     "wrap_backward",
     "wrap_optimizer",
+    "wrap_h2d",
 ]
