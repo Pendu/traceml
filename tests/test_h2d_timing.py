@@ -261,16 +261,16 @@ class TestH2DAutoTimerPatch:
             recorded.append(name)
             yield
 
-        with patch.object(
-            self._mod, "_ORIG_TENSOR_TO", return_value=param
-        ):
+        with patch.object(self._mod, "_ORIG_TENSOR_TO", return_value=param):
             with patch(
                 "traceml.instrumentation.patches.h2d_auto_timer_patch.timed_region",
                 side_effect=fake_timed_region,
             ):
                 self._mod._traceml_tensor_to(param, "cuda:0")
 
-        assert recorded == [], "Parameter receiver must short-circuit before timing"
+        assert (
+            recorded == []
+        ), "Parameter receiver must short-circuit before timing"
 
     def test_cuda_source_short_circuits(self):
         """D2D source-device short-circuit: when self.is_cuda, no timing.
@@ -311,7 +311,9 @@ class TestH2DAutoTimerPatch:
                 ):
                     self._mod._traceml_tensor_to(cpu_tensor, "cuda:0")
 
-        assert recorded == [], "D2D source must short-circuit, no h2d_time event"
+        assert (
+            recorded == []
+        ), "D2D source must short-circuit, no h2d_time event"
 
 
 # Step-buffer integration: event recorded inside trace_step only
@@ -433,14 +435,19 @@ class TestWrapH2D:
         class _FakeDictBatch:
             def __init__(self, data):
                 self._data = data
+
             def to(self, device):  # noqa: E701
                 return self
+
             def __getitem__(self, k):
                 return self._data[k]
+
             def __len__(self):
                 return len(self._data)
+
             def __iter__(self):
                 return iter(self._data)
+
             def __contains__(self, k):
                 return k in self._data
 
