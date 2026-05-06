@@ -90,7 +90,14 @@ def _is_cuda_target(args: tuple, kwargs: dict) -> bool:
 
 
 def _traceml_tensor_to(self: torch.Tensor, *args: Any, **kwargs: Any) -> Any:
-    if not _enabled() or not _is_cuda_target(args, kwargs):
+    if not _enabled():
+        return _ORIG_TENSOR_TO(self, *args, **kwargs)
+    # Source-device short-circuit: D2D copies (cudaMemcpyPeer) and
+    # cuda_tensor.to('cuda') no-ops use a different DMA path from H2D
+    # (cudaMemcpyAsync) and must not be timed as h2d_time.
+    if self.is_cuda:
+        return _ORIG_TENSOR_TO(self, *args, **kwargs)
+    if not _is_cuda_target(args, kwargs):
         return _ORIG_TENSOR_TO(self, *args, **kwargs)
 
     with timed_region(

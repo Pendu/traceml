@@ -231,6 +231,47 @@ class TestH2DAutoTimerPatch:
             torch.Tensor.to = mod._ORIG_TENSOR_TO  # type: ignore[assignment]
             torch.Tensor._traceml_h2d_patched = False  # type: ignore[attr-defined]
 
+    def test_cuda_source_short_circuits(self):
+        """D2D source-device short-circuit: when self.is_cuda, no timing.
+
+        cuda_tensor.to('cuda:1') uses cudaMemcpyPeer (a peer-to-peer DMA path
+        over NVLink/PCIe), not the cudaMemcpyAsync host-to-device path.  It
+        must not be timed as h2d_time.
+
+        Test runs on CPU-only and GPU systems: _ORIG_TENSOR_TO is patched so
+        no real device move is attempted.
+        """
+        from unittest.mock import PropertyMock
+
+        self._mod._H2D_TLS._traceml_h2d_enabled = True
+        cpu_tensor = torch.ones(4)
+        recorded = []
+
+        @contextmanager
+        def fake_timed_region(name, scope, use_gpu):
+            recorded.append(name)
+            yield
+
+        # PropertyMock patches torch.Tensor.is_cuda for all Tensor instances
+        # during the `with` block.  _ORIG_TENSOR_TO is patched on the patch
+        # module to avoid invoking real Tensor.to.
+        with patch.object(
+            torch.Tensor,
+            "is_cuda",
+            new_callable=PropertyMock,
+            return_value=True,
+        ):
+            with patch.object(
+                self._mod, "_ORIG_TENSOR_TO", return_value=cpu_tensor
+            ):
+                with patch(
+                    "traceml.instrumentation.patches.h2d_auto_timer_patch.timed_region",
+                    side_effect=fake_timed_region,
+                ):
+                    self._mod._traceml_tensor_to(cpu_tensor, "cuda:0")
+
+        assert recorded == [], "D2D source must short-circuit, no h2d_time event"
+
 
 # Step-buffer integration: event recorded inside trace_step only
 
