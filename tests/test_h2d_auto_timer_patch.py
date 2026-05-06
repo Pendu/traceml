@@ -148,3 +148,26 @@ def test_model_to_inside_activator_records_per_parameter(monkeypatch):
     assert all(
         c == ("_traceml_internal:h2d_time", "step", True) for c in calls
     )
+
+
+def test_trace_step_opens_h2d_activator():
+    """trace_step must open h2d_auto_timer alongside forward and backward.
+
+    We assert directly on the patch module's TLS state rather than driving a
+    real ``init(mode="auto")`` + ``.to()`` flow. That keeps the test focused
+    on the trace_step modification (Task 8) and decoupled from init/sampler
+    internals.
+    """
+    import torch.nn as nn
+
+    import traceml.sdk.instrumentation as instrumentation
+
+    captured = {}
+    model = nn.Linear(2, 2)
+
+    with instrumentation.trace_step(model):
+        captured["enabled_inside"] = h2d._enabled()
+    captured["enabled_after"] = h2d._enabled()
+
+    assert captured["enabled_inside"] is True
+    assert captured["enabled_after"] is False
