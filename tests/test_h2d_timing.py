@@ -231,6 +231,35 @@ class TestH2DAutoTimerPatch:
             torch.Tensor.to = mod._ORIG_TENSOR_TO  # type: ignore[assignment]
             torch.Tensor._traceml_h2d_patched = False  # type: ignore[attr-defined]
 
+    def test_parameter_receiver_short_circuits_filter(self):
+        """Parameter receivers must be skipped (the _apply traversal case).
+
+        nn.Module.to(device) calls tensor.to() once per parameter via
+        Module._apply.  Without this filter, model.to(device) inside
+        trace_step would record one h2d_time event per parameter.
+        """
+        import torch.nn as nn
+
+        self._mod._H2D_TLS._traceml_h2d_enabled = True
+        param = nn.Parameter(torch.ones(4))  # CPU Parameter
+        recorded = []
+
+        @contextmanager
+        def fake_timed_region(name, scope, use_gpu):
+            recorded.append(name)
+            yield
+
+        with patch.object(
+            self._mod, "_ORIG_TENSOR_TO", return_value=param
+        ):
+            with patch(
+                "traceml.instrumentation.patches.h2d_auto_timer_patch.timed_region",
+                side_effect=fake_timed_region,
+            ):
+                self._mod._traceml_tensor_to(param, "cuda:0")
+
+        assert recorded == [], "Parameter receiver must short-circuit before timing"
+
     def test_cuda_source_short_circuits(self):
         """D2D source-device short-circuit: when self.is_cuda, no timing.
 

@@ -97,6 +97,11 @@ def _traceml_tensor_to(self: torch.Tensor, *args: Any, **kwargs: Any) -> Any:
     # (cudaMemcpyAsync) and must not be timed as h2d_time.
     if self.is_cuda:
         return _ORIG_TENSOR_TO(self, *args, **kwargs)
+    # Parameter-receiver short-circuit: nn.Module.to(device) calls
+    # tensor.to() once per Parameter via Module._apply.  Without this filter,
+    # model.to(device) inside trace_step inflates n_calls by N parameters.
+    if isinstance(self, torch.nn.Parameter):
+        return _ORIG_TENSOR_TO(self, *args, **kwargs)
     if not _is_cuda_target(args, kwargs):
         return _ORIG_TENSOR_TO(self, *args, **kwargs)
 
