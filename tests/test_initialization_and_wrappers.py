@@ -31,6 +31,7 @@ def test_auto_mode_enables_all_supported_patches(monkeypatch):
     import traceml.instrumentation.patches.backward_auto_timer_patch as backward_patch
     import traceml.instrumentation.patches.dataloader_patch as dataloader_patch
     import traceml.instrumentation.patches.forward_auto_timer_patch as forward_patch
+    import traceml.instrumentation.patches.h2d_auto_timer_patch as h2d_patch
 
     monkeypatch.setattr(
         dataloader_patch,
@@ -47,6 +48,11 @@ def test_auto_mode_enables_all_supported_patches(monkeypatch):
         "patch_backward",
         lambda: calls.append("backward"),
     )
+    monkeypatch.setattr(
+        h2d_patch,
+        "patch_h2d",
+        lambda: calls.append("h2d"),
+    )
 
     cfg = initialization.init(mode="auto")
 
@@ -54,7 +60,8 @@ def test_auto_mode_enables_all_supported_patches(monkeypatch):
     assert cfg.patch_dataloader is True
     assert cfg.patch_forward is True
     assert cfg.patch_backward is True
-    assert calls == ["dataloader", "forward", "backward"]
+    assert cfg.patch_h2d is True
+    assert calls == ["dataloader", "forward", "backward", "h2d"]
 
 
 def test_manual_mode_installs_no_patches():
@@ -66,6 +73,7 @@ def test_manual_mode_installs_no_patches():
     assert cfg.patch_dataloader is False
     assert cfg.patch_forward is False
     assert cfg.patch_backward is False
+    assert cfg.patch_h2d is False
 
 
 def test_auto_mode_rejects_patch_overrides():

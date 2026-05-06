@@ -39,6 +39,7 @@ def test_init_auto_enables_all_supported_patches(monkeypatch):
     import traceml.instrumentation.patches.backward_auto_timer_patch as backward_patch
     import traceml.instrumentation.patches.dataloader_patch as dataloader_patch
     import traceml.instrumentation.patches.forward_auto_timer_patch as forward_patch
+    import traceml.instrumentation.patches.h2d_auto_timer_patch as h2d_patch
 
     monkeypatch.setattr(
         dataloader_patch,
@@ -55,6 +56,11 @@ def test_init_auto_enables_all_supported_patches(monkeypatch):
         "patch_backward",
         lambda: calls.append("backward"),
     )
+    monkeypatch.setattr(
+        h2d_patch,
+        "patch_h2d",
+        lambda: calls.append("h2d"),
+    )
 
     cfg = initialization.init(mode="auto")
 
@@ -62,7 +68,8 @@ def test_init_auto_enables_all_supported_patches(monkeypatch):
     assert cfg.patch_dataloader is True
     assert cfg.patch_forward is True
     assert cfg.patch_backward is True
-    assert calls == ["dataloader", "forward", "backward"]
+    assert cfg.patch_h2d is True
+    assert calls == ["dataloader", "forward", "backward", "h2d"]
 
 
 def test_init_manual_installs_no_patches():
@@ -74,6 +81,7 @@ def test_init_manual_installs_no_patches():
     assert cfg.patch_dataloader is False
     assert cfg.patch_forward is False
     assert cfg.patch_backward is False
+    assert cfg.patch_h2d is False
 
 
 def test_init_selective_only_installs_requested_patches(monkeypatch):
@@ -404,3 +412,37 @@ def test_wrap_optimizer_preserves_identity_and_times_step(monkeypatch):
     assert result == "ok"
     assert optimizer.called is True
     assert calls == [("_traceml_internal:optimizer_step", "step", True)]
+
+
+def test_init_selective_with_patch_h2d_only(monkeypatch):
+    """Selective mode with only ``patch_h2d=True`` installs only that patch."""
+    initialization = _reload_initialization_module()
+
+    calls = []
+
+    import traceml.instrumentation.patches.backward_auto_timer_patch as backward_patch
+    import traceml.instrumentation.patches.dataloader_patch as dataloader_patch
+    import traceml.instrumentation.patches.forward_auto_timer_patch as forward_patch
+    import traceml.instrumentation.patches.h2d_auto_timer_patch as h2d_patch
+
+    monkeypatch.setattr(
+        dataloader_patch,
+        "patch_dataloader",
+        lambda: calls.append("dataloader"),
+    )
+    monkeypatch.setattr(
+        forward_patch, "patch_forward", lambda: calls.append("forward")
+    )
+    monkeypatch.setattr(
+        backward_patch, "patch_backward", lambda: calls.append("backward")
+    )
+    monkeypatch.setattr(h2d_patch, "patch_h2d", lambda: calls.append("h2d"))
+
+    cfg = initialization.init(mode="selective", patch_h2d=True)
+
+    assert cfg.mode == "selective"
+    assert cfg.patch_dataloader is False
+    assert cfg.patch_forward is False
+    assert cfg.patch_backward is False
+    assert cfg.patch_h2d is True
+    assert calls == ["h2d"]

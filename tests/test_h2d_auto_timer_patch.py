@@ -1,42 +1,39 @@
-"""Tests for the h2d auto-timer patch."""
+"""Tests for the h2d auto-timer patch.
+
+These tests do **not** reload the patch module between cases. ``importlib``
+reload re-executes ``_ORIG_TENSOR_TO = torch.Tensor.to`` after the prior
+import already replaced ``torch.Tensor.to`` with the patched wrapper, which
+causes a self-recursive lookup through the reloaded module's ``__globals__``
+and produces ``RecursionError`` on the next ``.to()`` call.
+
+Instead, we import the patch module once and treat ``patch_h2d()`` as the
+idempotent install it claims to be — install once, then drive behavior via
+the TLS gate. ``timed_region`` is stubbed with ``monkeypatch.setattr`` per the
+``test_wrap_optimizer_wraps_real_instance_step`` convention in
+``tests/test_initialization_and_wrappers.py``.
+"""
 from __future__ import annotations
 
-import importlib
 from contextlib import contextmanager
 
 import pytest
 import torch
 
-
-def _reload_h2d_patch():
-    import traceml.instrumentation.patches.h2d_auto_timer_patch as h2d
-    return importlib.reload(h2d)
+import traceml.instrumentation.patches.h2d_auto_timer_patch as h2d
 
 
-@pytest.fixture
-def isolated_patch():
-    """Ensure each test starts and ends with an unpatched torch.Tensor.to.
-
-    Without this fixture, a test that installs the h2d patch would leak the
-    monkey-patched ``torch.Tensor.to`` to subsequent tests in the same
-    pytest process.
-    """
-    orig = torch.Tensor.to
-    if hasattr(torch.Tensor, "_traceml_h2d_patched"):
-        delattr(torch.Tensor, "_traceml_h2d_patched")
+@pytest.fixture(autouse=True)
+def _reset_h2d_state():
+    """Install the patch (idempotent) and force the TLS gate off around
+    every test in this module."""
+    h2d.patch_h2d()
+    h2d._TLS._traceml_h2d_enabled = False
     yield
-    torch.Tensor.to = orig
-    if hasattr(torch.Tensor, "_traceml_h2d_patched"):
-        delattr(torch.Tensor, "_traceml_h2d_patched")
+    h2d._TLS._traceml_h2d_enabled = False
 
 
 def _make_fake_timed_region(calls):
-    """Return a ``timed_region``-shaped context manager that records calls.
-
-    Mirrors the convention in ``test_initialization_and_wrappers.py``:
-    monkeypatch the patch module's ``timed_region`` import with this stub
-    instead of inspecting ``_STEP_BUFFER`` globals.
-    """
+    """Return a ``timed_region``-shaped context manager that records calls."""
 
     @contextmanager
     def _fake(name, scope, use_gpu):
@@ -46,38 +43,31 @@ def _make_fake_timed_region(calls):
     return _fake
 
 
-def test_patch_h2d_is_idempotent(isolated_patch):
-    h2d = _reload_h2d_patch()
-
-    h2d.patch_h2d()
+def test_patch_h2d_is_idempotent():
+    """Second call to patch_h2d must be a no-op."""
     assert getattr(torch.Tensor, "_traceml_h2d_patched", False) is True
     first_method = torch.Tensor.to
 
-    h2d.patch_h2d()  # second call must be a no-op
+    h2d.patch_h2d()  # already installed by fixture; must short-circuit
+
     assert torch.Tensor.to is first_method
 
 
-def test_patch_does_not_record_when_disabled(isolated_patch, monkeypatch):
+def test_patch_does_not_record_when_disabled(monkeypatch):
     """Outside h2d_auto_timer, patched .to() must not call timed_region."""
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
-
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
 
     t = torch.randn(4, 4)
-    moved = t.to("cpu")  # gate is False — should fast-path
+    moved = t.to("cpu")
 
     assert moved.device.type == "cpu"
     assert calls == []
 
 
-def test_patch_records_event_inside_activator(isolated_patch, monkeypatch):
+def test_patch_records_event_inside_activator(monkeypatch):
     """Inside h2d_auto_timer, patched .to() invokes timed_region with the
     expected name/scope/use_gpu signature."""
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
-
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
 
@@ -88,14 +78,9 @@ def test_patch_records_event_inside_activator(isolated_patch, monkeypatch):
     assert calls == [("_traceml_internal:h2d_time", "step", True)]
 
 
-def test_activator_exit_resets_gate_on_exception(
-    isolated_patch, monkeypatch
-):
+def test_activator_exit_resets_gate_on_exception(monkeypatch):
     """If user code raises inside the activator, the gate must be False on
     exit so subsequent ``.to()`` calls fast-path."""
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
-
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
 
@@ -111,13 +96,8 @@ def test_activator_exit_resets_gate_on_exception(
 
 
 @pytest.mark.parametrize("form", ["device", "dtype", "tensor_like"])
-def test_polymorphic_to_forms_route_through_patch(
-    isolated_patch, monkeypatch, form
-):
+def test_polymorphic_to_forms_route_through_patch(monkeypatch, form):
     """All three .to() forms (device, dtype, tensor-like) hit the patch."""
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
-
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
 
@@ -135,15 +115,10 @@ def test_polymorphic_to_forms_route_through_patch(
     assert calls == [("_traceml_internal:h2d_time", "step", True)]
 
 
-def test_model_to_outside_activator_records_nothing(
-    isolated_patch, monkeypatch
-):
+def test_model_to_outside_activator_records_nothing(monkeypatch):
     """model.to(device) at init time fires Tensor.to per parameter; the gate
     must keep all of them silent."""
     import torch.nn as nn
-
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
 
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
@@ -156,15 +131,10 @@ def test_model_to_outside_activator_records_nothing(
     assert calls == []
 
 
-def test_model_to_inside_activator_records_per_parameter(
-    isolated_patch, monkeypatch
-):
+def test_model_to_inside_activator_records_per_parameter(monkeypatch):
     """Counter-test: inside the activator, model.to fires N events (one per
     parameter)."""
     import torch.nn as nn
-
-    h2d = _reload_h2d_patch()
-    h2d.patch_h2d()
 
     calls: list = []
     monkeypatch.setattr(h2d, "timed_region", _make_fake_timed_region(calls))
