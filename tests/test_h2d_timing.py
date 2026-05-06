@@ -379,14 +379,39 @@ class TestWrapH2D:
         with pytest.raises(TypeError, match="callable .to\\(\\) method"):
             wrap_h2d(object())
 
-    def test_wrap_h2d_raises_when_auto_patch_active(self):
+    def test_wrap_h2d_defers_when_auto_patch_active(self):
+        """If the auto patch is active when ``wrap_h2d(...).to(...)`` is
+        called, the proxy must defer to the patch (silent no-op) so the
+        same .to() call is not double-counted.
+
+        Replaces the older "raise at wrap time" behavior, which had a race
+        window: a user who wrapped before init(mode="auto") would get the
+        proxy, then init() installs the patch, then the proxy's .to() and
+        the patched Tensor.to both fire on the same call.
+        """
         torch.Tensor._traceml_h2d_patched = True  # type: ignore[attr-defined]
         tensor = torch.ones(4)
 
-        with pytest.raises(
-            RuntimeError, match="automatic instrumentation is already active"
-        ):
-            wrap_h2d(tensor)
+        wrapped = wrap_h2d(tensor)  # must NOT raise
+
+        recorded = []
+
+        @contextmanager
+        def fake_timed_region(name, scope, use_gpu):
+            recorded.append(name)
+            yield
+
+        with patch.object(torch.Tensor, "to", return_value=tensor):
+            with patch(
+                "traceml.sdk.wrappers.timed_region",
+                side_effect=fake_timed_region,
+            ):
+                wrapped.to("cuda:0")
+
+        assert recorded == [], (
+            "Proxy must defer when auto patch is active; "
+            "the patch already times the underlying .to() call"
+        )
 
     def test_wrap_h2d_accepts_custom_batch_object(self):
         """wrap_h2d() works on any object with a .to() method, not only tensors."""

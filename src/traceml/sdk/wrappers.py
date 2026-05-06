@@ -94,14 +94,6 @@ def _ensure_optimizer_wrapper_allowed() -> None:
         )
 
 
-def _ensure_h2d_wrapper_allowed() -> None:
-    if getattr(torch.Tensor, "_traceml_h2d_patched", False):
-        _raise_duplicate_instrumentation(
-            "h2d transfer",
-            "torch.Tensor.to() has already been patched for H2D timing.",
-        )
-
-
 class _WrappedDataLoaderIterator:
     """
     Iterator proxy that times `next(...)` as TraceML dataloader fetch.
@@ -315,6 +307,13 @@ class _WrappedH2D:
         self._obj = obj
 
     def to(self, *args: Any, **kwargs: Any) -> Any:
+        # Re-check the global auto-patch sentinel at USE time.  If a user
+        # wraps before traceml.init(mode="auto") and then calls .to(...)
+        # after init, both this proxy AND the now-installed Tensor.to patch
+        # would fire on the same call (double-counted).  Defer to the auto
+        # patch when it's active.
+        if getattr(torch.Tensor, "_traceml_h2d_patched", False):
+            return self._obj.to(*args, **kwargs)
         with timed_region(
             name="_traceml_internal:h2d_time",
             scope=TimeScope.STEP,
@@ -345,14 +344,14 @@ def wrap_h2d(obj: Any) -> "_WrappedH2D":
 
     Notes
     -----
-    - Raises if the automatic H2D patch is already active to prevent double
-      counting.
     - The wrapper does not need the object to be a ``torch.Tensor``; any
       object with a ``.to(...)`` method is accepted (e.g. custom batch
       containers).
+    - If ``traceml.init(mode="auto")`` is called *after* ``wrap_h2d(...)``,
+      the proxy detects the active sentinel inside ``.to()`` and silently
+      defers to the auto patch to prevent double-counting.  Wrap-time
+      sentinel checks would not catch this race.
     """
-    _ensure_h2d_wrapper_allowed()
-
     to_fn = getattr(obj, "to", None)
     if to_fn is None or not callable(to_fn):
         raise TypeError(
