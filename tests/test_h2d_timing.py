@@ -122,6 +122,18 @@ class TestIsCudaTarget:
     def test_no_args_is_false(self):
         assert self._fn((), {}) is False
 
+    def test_substring_cuda_in_random_path_is_false(self):
+        """Strings containing 'cuda' as a substring (e.g. directory names)
+        must not match.  torch.device('cudacheckpoint') raises RuntimeError;
+        the filter must return False, not True."""
+        assert self._fn(("/path/to/cudacheckpoint",), {}) is False
+        assert self._fn(("acuda",), {}) is False
+
+    def test_invalid_device_string_is_false(self):
+        """Garbage device strings must be rejected (False), not raise."""
+        assert self._fn(("not_a_device",), {}) is False
+        assert self._fn((), {"device": "not_a_device"}) is False
+
 
 # Auto-patch: TLS enable-flag gating
 

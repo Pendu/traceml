@@ -41,7 +41,7 @@ Event name
 from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import Any, Optional
 
 import torch
 
@@ -61,6 +61,28 @@ def _enabled() -> bool:
 # Device-target detection
 
 
+def _device_type(value: Any) -> Optional[str]:
+    """
+    Extract the device-type string from a ``.to()`` argument, or None if
+    the argument is not a recognized device specifier.
+
+    Handles ``torch.device`` instances, ``torch.Tensor`` (uses tensor.device),
+    and string forms parsed via ``torch.device(s)``.  Substring matching is
+    avoided because strings like ``"/path/to/cudacheckpoint"`` would falsely
+    match ``"cuda"``.
+    """
+    if isinstance(value, torch.device):
+        return value.type
+    if isinstance(value, torch.Tensor):
+        return value.device.type
+    if isinstance(value, str):
+        try:
+            return torch.device(value).type
+        except (RuntimeError, TypeError):
+            return None
+    return None
+
+
 def _is_cuda_target(args: tuple, kwargs: dict) -> bool:
     """
     Return True when the ``.to()`` call is moving data to a CUDA device.
@@ -72,20 +94,10 @@ def _is_cuda_target(args: tuple, kwargs: dict) -> bool:
       tensor.to(other_cuda_tensor)   # copies device from other_tensor
     """
     first = args[0] if args else None
-
-    if isinstance(first, str) and "cuda" in first:
+    if _device_type(first) == "cuda":
         return True
-    if isinstance(first, torch.device) and first.type == "cuda":
+    if _device_type(kwargs.get("device")) == "cuda":
         return True
-    if isinstance(first, torch.Tensor) and first.is_cuda:
-        return True
-
-    device = kwargs.get("device")
-    if isinstance(device, str) and "cuda" in device:
-        return True
-    if isinstance(device, torch.device) and device.type == "cuda":
-        return True
-
     return False
 
 
