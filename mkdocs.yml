@@ -121,9 +121,8 @@ nav:
           - Review a SQLite projection: contributor_guide/review_sqlite_projection.md
   - Deep Dive:
       - Overview: deep_dive/index.md
+      - Architecture explainer: deep_dive/architecture-explainer.md
       - Why TraceML: deep_dive/why.md
       - Learning Q&A: deep_dive/learning-qa.md
       - Code walkthroughs: deep_dive/code-walkthroughs.md
       - PyTorch Q&A: deep_dive/pytorch-qa.md
-      - PR reviews:
-          - "PR #87 — H2D timing": deep_dive/pr_reviews/pr-87-h2d-timing.md

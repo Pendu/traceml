@@ -2,9 +2,9 @@ name: Docs
 
 on:
   push:
-    branches: [docs/study]
+    branches: [docs_personal]
   pull_request:
-    branches: [docs/study]
+    branches: [docs_personal]
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -32,7 +32,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/docs/study'
+    if: github.ref == 'refs/heads/docs_personal'
     runs-on: ubuntu-latest
     permissions:
       pages: write

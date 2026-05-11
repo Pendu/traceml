@@ -1,6 +1,6 @@
 # Pipeline walkthrough — one telemetry event, end-to-end
 
-If you can trace a single telemetry event from the moment it's born inside the user's training process to the moment it renders as a number on someone's terminal, you understand TraceML. This document follows one event through eight stations. The deep coverage of each station lives in the [W6–W10](../deep_dive/code-walkthroughs.md) walkthroughs and in [PR #87 Appendix D](../deep_dive/pr_reviews/pr-87-h2d-timing.md) — this is the condensed map.
+If you can trace a single telemetry event from the moment it's born inside the user's training process to the moment it renders as a number on someone's terminal, you understand TraceML. This document follows one event through eight stations. The deep coverage of each station lives in the [W6–W10](../deep_dive/code-walkthroughs.md) walkthroughs — this is the condensed map.
 
 ---
 
@@ -57,7 +57,7 @@ The patched `.to()` runs inside `with timed_region("_traceml_internal:h2d_time",
 - **CPU and GPU timestamps both captured.** GPU events are accurate; CPU is the fallback when CUDA is unavailable, and a sanity cross-check.
 - **GPU events are recorded but NOT resolved here.** `start.record()` and `end.record()` enqueue timestamp ops on the stream; calling `elapsed_time(start, end)` would require synchronization, which would serialize training and destroy the overhead budget. Resolution is deferred to Station 3.
 
-`_STEP_BUFFER` is a plain `deque`, written only from the training thread. Thread-safety is by convention, not by lock — see [PR #87 §3.2](../deep_dive/pr_reviews/pr-87-h2d-timing.md) for what happens when this convention is violated.
+`_STEP_BUFFER` is a plain `deque`, written only from the training thread. Thread-safety is by convention, not by lock.
 
 ---
 
@@ -88,7 +88,7 @@ The sampler runs on a separate thread inside the training process — the runtim
 
 **3c.** Aggregate the resolved batch by `(name, device, is_gpu)`: sum durations, count invocations. Build a row like `{"step": N, "events": {"_traceml_internal:h2d_time": {"cuda:0": {"is_gpu": True, "duration_ms": 0.41, "n_calls": 1}}, ...}}` and write it to the in-memory `Database` (table: `StepTimeTable`) via `BaseSampler._add_record()`.
 
-**Design point worth holding:** `n_calls` and `sum_ms` are both first-class. `sum_ms / n_calls` recovers the per-call mean; `sum_ms` alone is "how much wall-time this `name` cost this step." Renderer choices about which to display matter — see [PR #87 §3.2](../deep_dive/pr_reviews/pr-87-h2d-timing.md) for the overcount bug.
+**Design point worth holding:** `n_calls` and `sum_ms` are both first-class. `sum_ms / n_calls` recovers the per-call mean; `sum_ms` alone is "how much wall-time this `name` cost this step." Renderer choices about which to display matter.
 
 ---
 
@@ -207,5 +207,4 @@ If you can answer these without re-reading, you have the mental model.
 - **Deep walkthroughs:** [W6 (samplers)](../deep_dive/code-walkthroughs.md#w6-samplers-schemas-turning-hook-events-into-structured-rows), [W7 (DB / sender)](../deep_dive/code-walkthroughs.md#w7-database-sender-bounded-in-memory-store-and-incremental-tcp-shipping), [W8 (transport)](../deep_dive/code-walkthroughs.md#w8-transport-tcp-serverclient-msgpack-framing-ddp-rank-detection), [W9 (aggregator core)](../deep_dive/code-walkthroughs.md#w9-aggregator-core-tcp-receive-frame-dispatch-sqlite-writes), [W10 (renderers / drivers)](../deep_dive/code-walkthroughs.md#w10-display-drivers-renderers-terminal-and-web-ui-from-sql).
 - **Concept Q&A:** [Q10 (TCP)](../deep_dive/learning-qa.md#q10-what-is-tcp-concretely-and-whats-a-port), [Q15 (CUDA streams)](../deep_dive/learning-qa.md#q15-what-is-a-cuda-stream-and-how-does-it-differ-from-a-cpu-thread).
 - **PyTorch internals:** [P48 (`_call_impl`)](../deep_dive/pytorch-qa.md#p48-what-is-_call_impl-and-why-does-traceml-monkey-patch-around-it-instead-of-just-using-public-hooks), [P49 (hook firing order)](../deep_dive/pytorch-qa.md#p49-whats-the-exact-firing-order-of-forward_pre_hook-forward_hook-backward_pre_hook-backward_hook), [P51 (`torch.cuda.*` API stability)](../deep_dive/pytorch-qa.md#p51-which-torchcuda-apis-does-traceml-rely-on-and-how-stable-are-they-across-pytorch-versions).
-- **The full pedagogical version:** [PR #87 Appendix D](../deep_dive/pr_reviews/pr-87-h2d-timing.md) — Stations 1–3 are written in detail there with checkpoint questions; Stations 4–8 above complete what that document defers.
 - **Cross-cutting rules:** [principles.md](principles.md).
