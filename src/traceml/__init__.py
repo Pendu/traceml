@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-__version__ = "0.2.13"
+__version__ = "0.2.14"
 
 __all__ = [
     "__version__",
@@ -23,6 +23,7 @@ __all__ = [
     "wrap_forward",
     "wrap_backward",
     "wrap_optimizer",
+    "wrap_h2d",
 ]
 
 
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
         wrap_backward,
         wrap_dataloader_fetch,
         wrap_forward,
+        wrap_h2d,
         wrap_optimizer,
     )
 

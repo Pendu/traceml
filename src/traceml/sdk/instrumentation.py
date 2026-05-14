@@ -49,6 +49,7 @@ from traceml.instrumentation.patches.backward_auto_timer_patch import (
 from traceml.instrumentation.patches.forward_auto_timer_patch import (
     forward_auto_timer,
 )
+from traceml.instrumentation.patches.h2d_auto_timer_patch import h2d_auto_timer
 from traceml.runtime.state import TraceSessionState, get_trace_session_state
 from traceml.utils.entry_hook import attach_execution_entry_hooks
 from traceml.utils.flush_buffers import flush_step_events
@@ -157,30 +158,7 @@ class TraceState(metaclass=_TraceStateMeta):
 
 @contextmanager
 def trace_step(model: nn.Module):
-    """
-    Define a single training step boundary.
-
-    Responsibilities
-    ----------------
-    - Mark the semantic start/end of a training step
-    - Attribute step-scoped timing events
-    - Advance the global step counter
-    - Trigger step-end memory sampling
-    - Flush buffered step timing events
-
-    Important
-    ---------
-    This function does not install automatic framework patches on its own.
-    The new SDK path expects callers to choose an explicit init policy via
-    `traceml.init(...)`. Legacy `traceml.decorators` imports still preserve
-    automatic patch installation for backward compatibility.
-
-    Safety
-    ------
-    - Never blocks training
-    - Never swallows user exceptions
-    - Best-effort instrumentation only
-    """
+    """Define a single training step boundary."""
     if _traceml_disabled():
         yield
         return
@@ -198,7 +176,7 @@ def trace_step(model: nn.Module):
         with timed_region(
             "_traceml_internal:step_time", scope="step", use_gpu=False
         ):
-            with forward_auto_timer(), backward_auto_timer():
+            with forward_auto_timer(), backward_auto_timer(), h2d_auto_timer():
                 if _should_auto_install_optimizer_timing():
                     ensure_optimizer_timing_installed()
                 yield
