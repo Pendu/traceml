@@ -10,9 +10,13 @@ def test_canonical_instrumentation_namespace_imports():
     forward_patch = importlib.import_module(
         "traceml.instrumentation.patches.forward_auto_timer_patch"
     )
+    ddp_comm_hook = importlib.import_module(
+        "traceml.instrumentation.hooks.ddp_comm_hook"
+    )
 
     assert optimizer_hooks.ensure_optimizer_timing_installed is not None
     assert forward_patch.patch_forward is not None
+    assert ddp_comm_hook.install_ddp_comm_hook is not None
 
 
 @pytest.mark.parametrize(

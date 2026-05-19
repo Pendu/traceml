@@ -18,6 +18,7 @@ class TraceMLInitConfig:
     patch_forward: bool
     patch_backward: bool
     patch_h2d: bool
+    auto_wrap_ddp: bool = True
     source: str = "user"
 
     def same_effective_configuration(self, other: "TraceMLInitConfig") -> bool:
@@ -30,6 +31,7 @@ class TraceMLInitConfig:
             and self.patch_forward == other.patch_forward
             and self.patch_backward == other.patch_backward
             and self.patch_h2d == other.patch_h2d
+            and self.auto_wrap_ddp == other.auto_wrap_ddp
         )
 
 

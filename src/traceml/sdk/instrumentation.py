@@ -120,6 +120,53 @@ def _should_auto_install_optimizer_timing() -> bool:
     return getattr(cfg, "mode", "auto") == "auto"
 
 
+def _should_auto_install_ddp_comm_timing() -> bool:
+    """
+    Return True when ``trace_step(...)`` should auto-install DDP comm
+    hook timing.
+
+    Gated by ``TraceMLInitConfig.auto_wrap_ddp`` (default True) and
+    the ``TRACEML_NO_AUTO_WRAP_DDP=1`` env override.
+    """
+    if os.environ.get("TRACEML_NO_AUTO_WRAP_DDP", "0") == "1":
+        return False
+
+    try:
+        from traceml.sdk.initial import get_init_config
+    except Exception:
+        return True
+
+    cfg = get_init_config()
+    if cfg is None:
+        return True
+
+    return getattr(cfg, "auto_wrap_ddp", True)
+
+
+def ensure_ddp_comm_hook_installed(
+    ddp_model: nn.Module,
+) -> None:
+    """
+    Install DDP comm hook timing if not already installed.
+
+    Called from ``trace_step`` when the model is a DDP wrapper.
+    Idempotent via sentinel on the DDP instance.
+    """
+    if getattr(ddp_model, "_traceml_ddp_comm_hook_installed", False):
+        return
+
+    try:
+        from traceml.instrumentation.hooks.ddp_comm_hook import (
+            install_ddp_comm_hook,
+        )
+
+        install_ddp_comm_hook(ddp_model)
+    except Exception as exc:
+        _log_instrumentation_error(
+            "DDP comm hook auto-install failed", exc
+        )
+
+
 class _TraceStateMeta(type):
     @property
     def step(cls) -> int:
@@ -156,6 +203,26 @@ class TraceState(metaclass=_TraceStateMeta):
         return get_trace_session_state().advance_step(delta)
 
 
+def _maybe_unwrap_ddp(model: nn.Module) -> nn.Module:
+    """
+    Return the inner module if *model* is a DDP wrapper, else *model*.
+
+    Load-bearing: downstream calls (``StepMemoryTracker``,
+    ``flush_step_events``) key buffers by ``id(model)``.
+    ``trace_model_instance`` registers layer hooks by
+    ``id(inner_module)``.  Without unwrap, ``id(ddp_wrapper) !=
+    id(inner_module)`` and layer events silently vanish.
+    """
+    try:
+        from torch.nn.parallel import DistributedDataParallel
+
+        if isinstance(model, DistributedDataParallel):
+            return model.module
+    except ImportError:
+        pass
+    return model
+
+
 @contextmanager
 def trace_step(model: nn.Module):
     """Define a single training step boundary."""
@@ -163,8 +230,23 @@ def trace_step(model: nn.Module):
         yield
         return
 
+    # Auto-install DDP comm hook — uses the wrapper for isinstance.
+    try:
+        from torch.nn.parallel import DistributedDataParallel
+
+        if (
+            isinstance(model, DistributedDataParallel)
+            and _should_auto_install_ddp_comm_timing()
+        ):
+            ensure_ddp_comm_hook_installed(model)
+    except ImportError:
+        pass
+
+    # Unwrap for downstream id()-keyed operations.
+    effective_model = _maybe_unwrap_ddp(model)
+
     trace_state = get_trace_session_state()
-    mem_tracker = StepMemoryTracker(model)
+    mem_tracker = StepMemoryTracker(effective_model)
     step_completed = False
 
     try:
@@ -191,7 +273,7 @@ def trace_step(model: nn.Module):
             _log_instrumentation_error("record failed", exc)
 
         try:
-            flush_step_events(model, trace_state.step)
+            flush_step_events(effective_model, trace_state.step)
         except Exception as exc:
             _log_instrumentation_error("flush failed", exc)
 

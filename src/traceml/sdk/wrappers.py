@@ -74,6 +74,16 @@ def _ensure_optimizer_wrapper_allowed() -> None:
         )
 
 
+def _ensure_ddp_wrapper_allowed(ddp_model: Any) -> None:
+    from torch.nn.parallel import DistributedDataParallel
+
+    if not isinstance(ddp_model, DistributedDataParallel):
+        raise TypeError(
+            "wrap_ddp() expects a DistributedDataParallel instance, "
+            f"got {type(ddp_model).__name__}."
+        )
+
+
 class _WrappedDataLoaderIterator:
     """
     Iterator proxy that times `next(...)` as TraceML dataloader fetch.
@@ -319,6 +329,51 @@ class _WrappedH2D:
         return f"_WrappedH2D({self._obj!r})"
 
 
+def wrap_ddp(
+    ddp_model: Any,
+    base_hook: Any = None,
+) -> Any:
+    """
+    Instrument a DDP model's gradient-sync for per-step comm timing.
+
+    Installs a ``register_comm_hook`` that wraps *base_hook* (or
+    PyTorch's default ``allreduce_hook``) with CUDA-event timing.
+    Events flow through the existing step-time pipeline as
+    ``_traceml_comm:ddp_grad_sync``.
+
+    Parameters
+    ----------
+    ddp_model:
+        A ``DistributedDataParallel``-wrapped model.
+    base_hook:
+        Optional user-supplied comm hook (e.g. ``fp16_compress_hook``).
+        When ``None``, delegates to ``default_hooks.allreduce_hook``.
+
+    Returns
+    -------
+    The same ``ddp_model`` instance (in-place mutation).
+
+    Notes
+    -----
+    - Composition pattern mirrors PyTorch's own ``fp16_compress_wrapper``
+      at ``default_hooks.py:137-172``.
+    - PyTorch allows ONE hook per DDP instance.  If one is already
+      registered, this warns to stderr and returns unchanged (fail-open).
+    - Convention: pass the DDP wrapper to ``trace_step(model)`` for
+      auto-install.  Pass ``model.module`` to ``trace_model_instance()``
+      for layer hooks.
+    - Installing any comm hook loses PyTorch's fused copy+divide
+      optimisation (sub-microsecond cost per bucket per step).
+    """
+    _ensure_ddp_wrapper_allowed(ddp_model)
+
+    from traceml.instrumentation.hooks.ddp_comm_hook import (
+        install_ddp_comm_hook,
+    )
+
+    return install_ddp_comm_hook(ddp_model, base_hook=base_hook)
+
+
 def wrap_h2d(obj: Any) -> "_WrappedH2D":
     """
     Wrap a tensor or batch object so the next ``.to(...)`` call is timed.
@@ -357,5 +412,6 @@ __all__ = [
     "wrap_forward",
     "wrap_backward",
     "wrap_optimizer",
+    "wrap_ddp",
     "wrap_h2d",
 ]
