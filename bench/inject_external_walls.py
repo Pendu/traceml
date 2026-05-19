@@ -79,7 +79,7 @@ def main():
     for session, rc, wall in pairs:
         td = trial_dir(bench_root, session)
         if td is None:
-            skipped.append(f"unparseable: {session}")
+            skipped.append(f"unparsable: {session}")
             continue
         if not td.exists():
             skipped.append(f"no trial dir: {td}")
