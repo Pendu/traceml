@@ -40,6 +40,7 @@ from traceml.utils.timing import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_mock_ddp(*, hook_raises: bool = False) -> MagicMock:
     """
     Return a MagicMock that quacks like a DistributedDataParallel instance.
@@ -96,6 +97,7 @@ def _make_fake_future(
 # ---------------------------------------------------------------------------
 # Commit 5: install + sentinel + error paths
 # ---------------------------------------------------------------------------
+
 
 class TestInstallDDPCommHook:
     """install_ddp_comm_hook: sentinel, idempotency, type checks."""
@@ -154,6 +156,7 @@ class TestInstallDDPCommHook:
 # Commit 6: per-bucket emission + per-step aggregation
 # ---------------------------------------------------------------------------
 
+
 class TestPerBucketEmission:
     """Hook emits one TimeEvent per bucket; events land in _STEP_BUFFER."""
 
@@ -166,9 +169,7 @@ class TestPerBucketEmission:
     def _drive_hook(self, hook, n_buckets: int = 3):
         """Simulate n_buckets through the hook."""
         for i in range(n_buckets):
-            bucket = _make_fake_bucket(
-                index=i, is_last=(i == n_buckets - 1)
-            )
+            bucket = _make_fake_bucket(index=i, is_last=(i == n_buckets - 1))
             base_result = torch.zeros(10)
             fut = _make_fake_future(base_result)
             hook(None, bucket)
@@ -206,6 +207,7 @@ class TestPerBucketEmission:
 
     def test_events_from_separate_steps_stay_separate(self):
         """Two rounds of driving produce independent events."""
+
         def base_hook(state, bucket):
             return _make_fake_future()
 
@@ -225,6 +227,7 @@ class TestPerBucketEmission:
 # ---------------------------------------------------------------------------
 # Commit 7: base_hook composition + pool cleanup
 # ---------------------------------------------------------------------------
+
 
 class TestBaseHookComposition:
     """Verify user-supplied base_hook is called and TraceML still emits."""
@@ -286,6 +289,7 @@ class TestBaseHookComposition:
 # Commit 7.5: auto-install + DDP unwrap via trace_step
 # ---------------------------------------------------------------------------
 
+
 class TestAutoInstallViaTraceStep:
     """trace_step auto-installs DDP comm hook when model is DDP wrapper."""
 
@@ -295,36 +299,42 @@ class TestAutoInstallViaTraceStep:
 
         stack = ExitStack()
         patches = {
-            "ensure_ddp": stack.enter_context(patch(
-                "traceml.sdk.instrumentation."
-                "ensure_ddp_comm_hook_installed"
-            )),
-            "unwrap": stack.enter_context(patch(
-                "traceml.sdk.instrumentation._maybe_unwrap_ddp",
-                return_value=MagicMock(spec=nn.Module),
-            )),
-            "mem_tracker": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.StepMemoryTracker"
-            )),
-            "flush": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.flush_step_events"
-            )),
-            "timed": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.timed_region"
-            )),
-            "fwd": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.forward_auto_timer"
-            )),
-            "bwd": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.backward_auto_timer"
-            )),
-            "h2d": stack.enter_context(patch(
-                "traceml.sdk.instrumentation.h2d_auto_timer"
-            )),
-            "opt": stack.enter_context(patch(
-                "traceml.sdk.instrumentation."
-                "ensure_optimizer_timing_installed"
-            )),
+            "ensure_ddp": stack.enter_context(
+                patch(
+                    "traceml.sdk.instrumentation."
+                    "ensure_ddp_comm_hook_installed"
+                )
+            ),
+            "unwrap": stack.enter_context(
+                patch(
+                    "traceml.sdk.instrumentation._maybe_unwrap_ddp",
+                    return_value=MagicMock(spec=nn.Module),
+                )
+            ),
+            "mem_tracker": stack.enter_context(
+                patch("traceml.sdk.instrumentation.StepMemoryTracker")
+            ),
+            "flush": stack.enter_context(
+                patch("traceml.sdk.instrumentation.flush_step_events")
+            ),
+            "timed": stack.enter_context(
+                patch("traceml.sdk.instrumentation.timed_region")
+            ),
+            "fwd": stack.enter_context(
+                patch("traceml.sdk.instrumentation.forward_auto_timer")
+            ),
+            "bwd": stack.enter_context(
+                patch("traceml.sdk.instrumentation.backward_auto_timer")
+            ),
+            "h2d": stack.enter_context(
+                patch("traceml.sdk.instrumentation.h2d_auto_timer")
+            ),
+            "opt": stack.enter_context(
+                patch(
+                    "traceml.sdk.instrumentation."
+                    "ensure_optimizer_timing_installed"
+                )
+            ),
         }
         return stack, patches
 
@@ -359,9 +369,7 @@ class TestAutoInstallViaTraceStep:
         mock_ddp = _make_mock_ddp()
         stack, patches = self._trace_step_patches()
 
-        with patch.dict(
-            os.environ, {"TRACEML_NO_AUTO_WRAP_DDP": "1"}
-        ), stack:
+        with patch.dict(os.environ, {"TRACEML_NO_AUTO_WRAP_DDP": "1"}), stack:
             from traceml.sdk.instrumentation import trace_step
 
             with trace_step(mock_ddp):
@@ -458,9 +466,7 @@ def test_two_rank_gloo_ddp_grad_sync_fires(tmp_path):
     script_path = tmp_path / "gloo_worker.py"
     script_path.write_text(_GLOO_WORKER_SCRIPT)
 
-    src_path = os.path.join(
-        os.path.dirname(__file__), "..", "src"
-    )
+    src_path = os.path.join(os.path.dirname(__file__), "..", "src")
 
     env = {
         **os.environ,

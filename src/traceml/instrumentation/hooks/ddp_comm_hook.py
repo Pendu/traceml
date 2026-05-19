@@ -184,8 +184,7 @@ def install_ddp_comm_hook(
 
     if not callable(base_hook):
         raise TypeError(
-            "base_hook must be callable, "
-            f"got {type(base_hook).__name__}."
+            "base_hook must be callable, " f"got {type(base_hook).__name__}."
         )
 
     instrumented = _traceml_ddp_comm_hook_factory(base_hook)

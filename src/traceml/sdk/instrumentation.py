@@ -162,9 +162,7 @@ def ensure_ddp_comm_hook_installed(
 
         install_ddp_comm_hook(ddp_model)
     except Exception as exc:
-        _log_instrumentation_error(
-            "DDP comm hook auto-install failed", exc
-        )
+        _log_instrumentation_error("DDP comm hook auto-install failed", exc)
 
 
 class _TraceStateMeta(type):
