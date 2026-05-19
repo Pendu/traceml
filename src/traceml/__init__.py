@@ -24,6 +24,7 @@ __all__ = [
     "wrap_backward",
     "wrap_optimizer",
     "wrap_h2d",
+    "wrap_ddp",
 ]
 
 
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
         trace_step,
         wrap_backward,
         wrap_dataloader_fetch,
+        wrap_ddp,
         wrap_forward,
         wrap_h2d,
         wrap_optimizer,
