@@ -2,9 +2,13 @@
 
 Use TraceML with Hugging Face `Trainer` without rewriting your training loop.
 
-`TraceMLTrainer` is a drop-in replacement for `transformers.Trainer`. It wraps
-the training step automatically and writes the same TraceML
-`final_summary.json` and `final_summary.txt` artifacts.
+The **preferred** integration is `TraceMLTrainerCallback` — a standard
+`transformers.TrainerCallback` you add to any `Trainer`, no subclassing. It
+writes the same TraceML `final_summary.json` and `final_summary.txt` artifacts,
+recording one TraceML step per Hugging Face *global* step.
+
+For backward compatibility, the `TraceMLTrainer` drop-in subclass is still
+supported — it now simply installs the callback for you.
 
 ## 1. Install
 
@@ -18,14 +22,14 @@ If you are running the full examples below, install their optional dependencies:
 pip install datasets torchvision
 ```
 
-## 2. Replace `Trainer` With `TraceMLTrainer`
+## 2. Add The TraceML Callback (recommended)
 
-Change the import and instantiate `TraceMLTrainer` instead of
-`transformers.Trainer`:
+Pass `TraceMLTrainerCallback` to your existing `Trainer`:
 
 ```python
-from traceml_ai.integrations.huggingface import TraceMLTrainer
-from transformers import TrainingArguments
+from transformers import Trainer, TrainingArguments
+
+from traceml_ai.integrations.huggingface import TraceMLTrainerCallback
 
 training_args = TrainingArguments(
     output_dir="./output",
@@ -33,19 +37,44 @@ training_args = TrainingArguments(
     disable_tqdm=True,
 )
 
-trainer = TraceMLTrainer(
+trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    callbacks=[TraceMLTrainerCallback()],
+)
+
+trainer.train()
+```
+
+You do not need to add `traceml.trace_step(...)` manually — the callback drives
+it at the optimizer-step boundaries. For a baseline without TraceML, omit the
+callback (or launch with `--disable-traceml`).
+
+Under gradient accumulation, one TraceML step maps to one optimizer update
+(Hugging Face's `global_step`); the per-micro-batch forward/backward times are
+summed into that step.
+
+### Backward-compatible subclass
+
+If you already use `TraceMLTrainer`, it keeps working unchanged. It is now a
+thin wrapper that installs `TraceMLTrainerCallback` for you:
+
+```python
+from traceml_ai.integrations.huggingface import TraceMLTrainer
+
+trainer = TraceMLTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
     traceml_enabled=True,
 )
 
 trainer.train()
 ```
 
-You do not need to add `traceml.trace_step(...)` manually. If
-`traceml_enabled=False`, `TraceMLTrainer` behaves like a normal
+If `traceml_enabled=False`, `TraceMLTrainer` behaves like a normal
 `transformers.Trainer`.
 
 ## 3. Launch The Run
@@ -111,10 +140,16 @@ traceml run fine_tune.py --disable-traceml
 
 This launches your script natively through `torchrun` without TraceML telemetry.
 
+### Step memory shows "NO GPU"
+
+Step memory uses CUDA peak-memory telemetry, so it only populates on CUDA
+devices. On CPU/MPS runs the step-memory section reports "n/a" while step timing
+still works.
+
 ## Full Examples
 
 Use these examples when you want a complete runnable script. If you already
-have a Hugging Face training script, start with the smaller replacement pattern
+have a Hugging Face training script, start with the smaller callback pattern
 above.
 
 <details>
@@ -130,10 +165,11 @@ from datasets import load_dataset
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    Trainer,
     TrainingArguments,
 )
 
-from traceml_ai.integrations.huggingface import TraceMLTrainer
+from traceml_ai.integrations.huggingface import TraceMLTrainerCallback
 
 
 def main():
@@ -171,11 +207,11 @@ def main():
         disable_tqdm=True,
     )
 
-    trainer = TraceMLTrainer(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
-        traceml_enabled=True,
+        callbacks=[TraceMLTrainerCallback()],
     )
 
     trainer.train()
@@ -208,10 +244,11 @@ from transformers import (
     AutoImageProcessor,
     AutoModelForImageClassification,
     DefaultDataCollator,
+    Trainer,
     TrainingArguments,
 )
 
-from traceml_ai.integrations.huggingface import TraceMLTrainer
+from traceml_ai.integrations.huggingface import TraceMLTrainerCallback
 
 
 def main():
@@ -259,12 +296,12 @@ def main():
         disable_tqdm=True,
     )
 
-    trainer = TraceMLTrainer(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
         data_collator=DefaultDataCollator(),
-        traceml_enabled=True,
+        callbacks=[TraceMLTrainerCallback()],
     )
 
     trainer.train()
@@ -284,10 +321,18 @@ traceml run fine_tune_vision.py
 
 ## Reference
 
-`TraceMLTrainer` accepts:
+`TraceMLTrainerCallback(traceml_kwargs=None)`:
+
+- add to any `transformers.Trainer` via `callbacks=[TraceMLTrainerCallback()]`
+- `traceml_kwargs`: optional kwargs forwarded to per-layer hook attachment
+  (deep profile only)
+
+`TraceMLTrainer` — backward-compatible subclass that installs the callback —
+accepts:
 
 - everything that normal `transformers.Trainer` accepts
 - `traceml_enabled=True|False`
+- `traceml_kwargs=None`
 
 ## Next Steps
 
